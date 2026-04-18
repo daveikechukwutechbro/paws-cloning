@@ -16,8 +16,48 @@ import Star from '@/icons/Star'
 import Image from 'next/image'
 import ArrowRight from '@/icons/ArrowRight'
 import { sparkles } from '@/images'
+import { useState, useEffect } from 'react'
 
 const HomeTab = () => {
+    const [balance, setBalance] = useState(4646)
+    const [lastClaim, setLastClaim] = useState<number | null>(null)
+    const [timeRemaining, setTimeRemaining] = useState(0)
+
+    useEffect(() => {
+        const savedBalance = localStorage.getItem('pawsBalance')
+        const savedLastClaim = localStorage.getItem('lastClaim')
+        if (savedBalance) setBalance(parseInt(savedBalance))
+        if (savedLastClaim) setLastClaim(parseInt(savedLastClaim))
+    }, [])
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (lastClaim) {
+                const remaining = 3600000 - (Date.now() - lastClaim)
+                setTimeRemaining(Math.max(0, remaining))
+            }
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [lastClaim])
+
+    const claimHourlyReward = () => {
+        if (!lastClaim || Date.now() - lastClaim >= 3600000) {
+            const newBalance = balance + 200
+            setBalance(newBalance)
+            const now = Date.now()
+            setLastClaim(now)
+            localStorage.setItem('pawsBalance', newBalance.toString())
+            localStorage.setItem('lastClaim', now.toString())
+        }
+    }
+
+    const formatTime = (ms: number) => {
+        const hours = Math.floor(ms / 3600000)
+        const minutes = Math.floor((ms % 3600000) / 60000)
+        const seconds = Math.floor((ms % 60000) / 1000)
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    }
+
     return (
         <div className={`home-tab-con transition-all duration-300`}>
             {/* Connect Wallet Button */}
@@ -32,7 +72,7 @@ const HomeTab = () => {
             <div className="flex flex-col items-center mt-8">
                 <PawsLogo className="w-28 h-28 mb-4" />
                 <div className="flex items-center gap-1 text-center">
-                    <div className="text-6xl font-bold mb-1">4,646</div>
+                    <div className="text-6xl font-bold mb-1">{balance.toLocaleString()}</div>
                     <div className="text-white text-2xl">PAWS</div>
                 </div>
                 <div className="flex items-center gap-1 text-[#868686] rounded-full px-4 py-1.5 mt-2 cursor-pointer">
@@ -45,6 +85,29 @@ const HomeTab = () => {
                     />
                     <span>RANK</span>
                     <ArrowRight className="w-6 h-6" />
+                </div>
+            </div>
+
+            {/* Hourly Claim */}
+            <div className="px-4 mt-6">
+                <div className="bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg p-4">
+                    <div className="text-center mb-3">
+                        <div className="text-lg font-medium">Hourly Reward</div>
+                        <div className="text-sm text-[#868686]">Claim 200 PAWS every hour</div>
+                    </div>
+                    {timeRemaining > 0 ? (
+                        <div className="text-center">
+                            <div className="text-2xl font-bold text-[#007aff]">{formatTime(timeRemaining)}</div>
+                            <div className="text-sm text-[#868686]">until next claim</div>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={claimHourlyReward}
+                            className="w-full bg-[#007aff] text-white py-2 rounded-lg font-medium hover:bg-[#0056cc] transition-colors"
+                        >
+                            Claim 200 PAWS
+                        </button>
+                    )}
                 </div>
             </div>
 
