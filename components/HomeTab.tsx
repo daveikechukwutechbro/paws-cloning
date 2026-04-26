@@ -52,37 +52,33 @@ const HomeTab = () => {
     }, [])
 
     const claimHourlyReward = async () => {
-        try {
-            if (!user) {
-                alert('No user found')
-                return
-            }
-            
-            const currentBalance = localBalance
-            const newBalance = currentBalance + 2000
-            
-            // Update local state first
-            setLocalBalance(newBalance)
-            const now = Date.now()
-            setLastClaim(now)
-            localStorage.setItem('lastClaim', now.toString())
-
-            // Update Supabase
-            const { error } = await supabase
-                .from('users')
-                .update({ balance: newBalance })
-                .eq('id', user.id)
-            
-            if (error) {
-                alert('Error updating: ' + error.message)
-            } else {
-                alert('Claimed! New balance: ' + newBalance)
-            }
-            
-            refreshUser()
-        } catch (err) {
-            alert('Error: ' + err)
+        if (loading) {
+            alert('Loading... please wait')
+            return
         }
+        
+        if (!user) {
+            alert('User not found, refreshing...')
+            await refreshUser()
+            return
+        }
+        
+        const currentBalance = localBalance
+        const newBalance = currentBalance + 2000
+        
+        setLocalBalance(newBalance)
+        const now = Date.now()
+        setLastClaim(now)
+        localStorage.setItem('lastClaim', now.toString())
+
+        await supabase
+            .from('users')
+            .update({ balance: newBalance })
+            .eq('id', user.id)
+        
+        alert('Claimed! ' + newBalance + ' PAWS')
+        
+        refreshUser()
     }
 
     const formatTime = (ms: number) => {
@@ -145,6 +141,10 @@ const HomeTab = () => {
                             <div className="text-2xl font-bold text-[#007aff]">{formatTime(timeRemaining)}</div>
                             <div className="text-sm text-[#868686]">until next claim</div>
                         </div>
+                    ) : loading ? (
+                        <button disabled className="w-full bg-gray-500 text-white py-2 rounded-lg font-medium">
+                            Loading...
+                        </button>
                     ) : (
                         <button
                             onClick={claimHourlyReward}
