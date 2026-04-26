@@ -28,15 +28,15 @@ const HomeTab = () => {
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
 
     useEffect(() => {
-        if (user) {
-            setLocalBalance(user.balance)
-        }
-    }, [user])
-
-    useEffect(() => {
         const savedLastClaim = localStorage.getItem('lastClaim')
         if (savedLastClaim) setLastClaim(parseInt(savedLastClaim))
     }, [])
+
+    useEffect(() => {
+        if (!loading && user) {
+            setLocalBalance(user.balance)
+        }
+    }, [loading, user])
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -49,21 +49,20 @@ const HomeTab = () => {
     }, [lastClaim])
 
     const claimHourlyReward = async () => {
-        if (!lastClaim || Date.now() - lastClaim >= 3600000) {
-            const newBalance = localBalance + 200
+        if (user && (!lastClaim || Date.now() - lastClaim >= 3600000)) {
+            const currentBalance = user.balance || 50000
+            const newBalance = currentBalance + 2000
             setLocalBalance(newBalance)
             const now = Date.now()
             setLastClaim(now)
             localStorage.setItem('lastClaim', now.toString())
 
-            if (user) {
-                await supabase
-                    .from('users')
-                    .update({ balance: newBalance })
-                    .eq('id', user.id)
-                
-                refreshUser()
-            }
+            await supabase
+                .from('users')
+                .update({ balance: newBalance })
+                .eq('id', user.id)
+            
+            refreshUser()
         }
     }
 
@@ -76,7 +75,7 @@ const HomeTab = () => {
 
     const displayBalance = user ? user.balance : localBalance
     const displayUsername = user?.username || 'Guest'
-    const isNewUser = user?.balance === 0
+    const isNewUser = user?.balance === 50000
 
     const communities = [
         { name: 'X (Twitter)', url: 'https://x.com/GOTPAWSED' },
@@ -120,7 +119,7 @@ const HomeTab = () => {
                 <div className="bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg p-4">
                     <div className="text-center mb-3">
                         <div className="text-lg font-medium">Hourly Reward</div>
-                        <div className="text-sm text-[#868686]">Claim 200 PAWS every hour</div>
+                        <div className="text-sm text-[#868686]">Claim 2000 PAWS every hour</div>
                     </div>
                     {timeRemaining > 0 ? (
                         <div className="text-center">
@@ -132,7 +131,7 @@ const HomeTab = () => {
                             onClick={claimHourlyReward}
                             className="w-full bg-[#007aff] text-white py-2 rounded-lg font-medium hover:bg-[#0056cc] transition-colors"
                         >
-                            Claim 200 PAWS
+                            Claim 2000 PAWS
                         </button>
                     )}
                 </div>

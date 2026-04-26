@@ -58,7 +58,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     .insert({
                         id: userId,
                         username: username,
-                        balance: 0
+                        balance: 50000
                     })
                     .select()
                     .single()
