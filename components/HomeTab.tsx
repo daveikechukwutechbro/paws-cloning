@@ -40,16 +40,22 @@ const HomeTab = () => {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            if (lastClaim) {
-                const remaining = 3600000 - (Date.now() - lastClaim)
+            const saved = localStorage.getItem('lastClaim')
+            if (saved) {
+                const lastClaimTime = parseInt(saved)
+                const remaining = 3600000 - (Date.now() - lastClaimTime)
                 setTimeRemaining(Math.max(0, remaining))
             }
         }, 1000)
         return () => clearInterval(interval)
-    }, [lastClaim])
+    }, [])
 
     const claimHourlyReward = async () => {
-        if (!user?.id) return
+        const currentUser = user
+        if (!currentUser?.id) {
+            console.log('No user ID')
+            return
+        }
         
         if (!lastClaim || Date.now() - lastClaim >= 3600000) {
             const currentBalance = localBalance || 50000
@@ -59,10 +65,14 @@ const HomeTab = () => {
             setLastClaim(now)
             localStorage.setItem('lastClaim', now.toString())
 
-            await supabase
+            const { error } = await supabase
                 .from('users')
                 .update({ balance: newBalance })
-                .eq('id', user.id)
+                .eq('id', currentUser.id)
+            
+            if (error) {
+                console.log('Update error:', error)
+            }
             
             refreshUser()
         }
