@@ -18,7 +18,7 @@ import ArrowRight from '@/icons/ArrowRight'
 import { sparkles } from '@/images'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
-import { supabase } from '@/utils/supabaseClient'
+import { updateUserBalance } from '@/utils/userUtils'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -26,7 +26,6 @@ const HomeTab = () => {
     const [lastClaim, setLastClaim] = useState<number | null>(null)
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
-    const [userReady, setUserReady] = useState(false)
 
     useEffect(() => {
         const savedLastClaim = localStorage.getItem('lastClaim')
@@ -37,9 +36,6 @@ const HomeTab = () => {
         if (!loading) {
             if (user) {
                 setLocalBalance(user.balance || 50000)
-                setUserReady(true)
-            } else {
-                setUserReady(true)
             }
         }
     }, [loading, user])
@@ -68,9 +64,7 @@ const HomeTab = () => {
         const userId = user?.id || localStorage.getItem('paws_user_id') || 'test_user_' + Date.now()
         localStorage.setItem('paws_user_id', userId)
 
-        await supabase
-            .from('users')
-            .upsert({ id: userId, balance: newBalance })
+        await updateUserBalance(userId, newBalance)
         
         refreshUser()
     }
