@@ -32,16 +32,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
 
     const refreshUser = async () => {
+        let userId = ''
+        let username = ''
+        
         const tg = (window as any).Telegram?.WebApp
         const tgUser = tg?.initDataUnsafe?.user
+        
+        if (tgUser) {
+            userId = tgUser.id.toString()
+            username = tgUser.first_name || 'Telegram User'
+        } else {
+            // Test mode - generate a test user ID
+            userId = 'test_user_' + Date.now()
+            username = 'TestUser'
+        }
 
-        if (!tgUser) {
+        if (!userId) {
             setLoading(false)
             return
         }
-
-        const userId = tgUser.id.toString()
-        const username = tgUser.first_name || 'Telegram User'
 
         try {
             const { data: existingUser } = await supabase
