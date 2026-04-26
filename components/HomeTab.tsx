@@ -22,7 +22,7 @@ import { supabase } from '@/utils/supabaseClient'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
-    const [localBalance, setLocalBalance] = useState(0)
+    const [localBalance, setLocalBalance] = useState(50000)
     const [lastClaim, setLastClaim] = useState<number | null>(null)
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
@@ -50,7 +50,7 @@ const HomeTab = () => {
 
     const claimHourlyReward = async () => {
         if (user && (!lastClaim || Date.now() - lastClaim >= 3600000)) {
-            const currentBalance = user.balance || 50000
+            const currentBalance = displayBalance || 50000
             const newBalance = currentBalance + 2000
             setLocalBalance(newBalance)
             const now = Date.now()
@@ -73,7 +73,7 @@ const HomeTab = () => {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
     }
 
-    const displayBalance = user ? user.balance : localBalance
+    const displayBalance = (user && user.balance > 0) ? user.balance : localBalance
     const displayUsername = user?.username || 'Guest'
     const isNewUser = user?.balance === 50000
 
