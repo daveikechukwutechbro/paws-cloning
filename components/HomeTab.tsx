@@ -17,16 +17,23 @@ import Image from 'next/image'
 import ArrowRight from '@/icons/ArrowRight'
 import { sparkles } from '@/images'
 import { useState, useEffect } from 'react'
+import { useUser } from '@/contexts/UserContext'
+import { supabase } from '@/utils/supabaseClient'
 
 const HomeTab = () => {
-    const [balance, setBalance] = useState(4646)
+    const { user, loading } = useUser()
+    const [localBalance, setLocalBalance] = useState(0)
     const [lastClaim, setLastClaim] = useState<number | null>(null)
     const [timeRemaining, setTimeRemaining] = useState(0)
 
     useEffect(() => {
-        const savedBalance = localStorage.getItem('pawsBalance')
+        if (user) {
+            setLocalBalance(user.balance)
+        }
+    }, [user])
+
+    useEffect(() => {
         const savedLastClaim = localStorage.getItem('lastClaim')
-        if (savedBalance) setBalance(parseInt(savedBalance))
         if (savedLastClaim) setLastClaim(parseInt(savedLastClaim))
     }, [])
 
@@ -40,14 +47,20 @@ const HomeTab = () => {
         return () => clearInterval(interval)
     }, [lastClaim])
 
-    const claimHourlyReward = () => {
+    const claimHourlyReward = async () => {
         if (!lastClaim || Date.now() - lastClaim >= 3600000) {
-            const newBalance = balance + 200
-            setBalance(newBalance)
+            const newBalance = localBalance + 200
+            setLocalBalance(newBalance)
             const now = Date.now()
             setLastClaim(now)
-            localStorage.setItem('pawsBalance', newBalance.toString())
             localStorage.setItem('lastClaim', now.toString())
+
+            if (user) {
+                await supabase
+                    .from('users')
+                    .update({ balance: newBalance })
+                    .eq('id', user.id)
+            }
         }
     }
 
@@ -58,10 +71,21 @@ const HomeTab = () => {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
     }
 
+    const displayBalance = user ? user.balance : localBalance
+    const displayUsername = user?.username || 'Guest'
+    const isNewUser = user?.balance === 0
+
     return (
         <div className={`home-tab-con transition-all duration-300`}>
+            {/* User Info Header */}
+            <div className="text-center mt-4">
+                <span className="text-[#868686] text-sm">Logged in as: </span>
+                <span className="text-white font-medium">{displayUsername}</span>
+                {loading && <span className="text-[#007aff] ml-2">Loading...</span>}
+            </div>
+
             {/* Connect Wallet Button */}
-            <button className="w-full flex justify-center mt-8">
+            <button className="w-full flex justify-center mt-4">
                 <div className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2">
                     <Wallet className="w-5 h-5" />
                     <span>Connect wallet</span>
@@ -72,11 +96,11 @@ const HomeTab = () => {
             <div className="flex flex-col items-center mt-8">
                 <PawsLogo className="w-28 h-28 mb-4" />
                 <div className="flex items-center gap-1 text-center">
-                    <div className="text-6xl font-bold mb-1">{balance.toLocaleString()}</div>
+                    <div className="text-6xl font-bold mb-1">{displayBalance.toLocaleString()}</div>
                     <div className="text-white text-2xl">PAWS</div>
                 </div>
                 <div className="flex items-center gap-1 text-[#868686] rounded-full px-4 py-1.5 mt-2 cursor-pointer">
-                    <span>NEWCOMER</span>
+                    <span>{isNewUser ? 'NEWCOMER' : 'ACTIVE'}</span>
                     <Image
                         src={sparkles}
                         alt="sparkles"

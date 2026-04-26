@@ -11,6 +11,7 @@
 
 import Image, { StaticImageData } from 'next/image'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 // Import your task icons
 import TaskWallet from '@/icons/TaskWallet'
@@ -25,56 +26,77 @@ type Task = {
     icon: string | React.FC<{ className?: string }>;
     title: string;
     reward: string;
+    link: string; // Add the link/URL property
     isComponent?: boolean;
 }
 
 const TasksTab = () => {
     const [activeTab, setActiveTab] = useState<'in-game' | 'partners'>('in-game')
+    const router = useRouter()
+
+    const handleTaskClick = (link: string) => {
+        // Check if it's an internal link (starts with /)
+        if (link.startsWith('/')) {
+            router.push(link)
+        } else {
+            // Open external link in a new tab
+            window.open(link, '_blank')
+        }
+    }
 
     const tasks: Task[] = [
         {
             icon: taskWhitePaws.src,
             title: 'Put 🐾 in your name',
-            reward: '+ 5,000 PAWS'
+            reward: '+ 5,000 PAWS',
+            link: 'https://yourdailyhealthtipss.blogspot.com' // Update with actual link
         },
         {
             icon: TaskPaws,
             title: 'Tweet about PAWS',
-            reward: '+ 2,000 PAWS'
+            reward: '+ 2,000 PAWS',
+            link: 'https://twitter.com/intent/tweet' // Twitter share link
         },
         {
             icon: taskBoost.src,
             title: 'Boost PAWS channel',
-            reward: '+ 2,500 PAWS'
+            reward: '+ 2,500 PAWS',
+            link: 'www.facebook.com' // Update with actual link
         },
         {
             icon: TaskTelegram,
             title: 'Follow channel',
-            reward: '+ 1,000 PAWS'
+            reward: '+ 1,000 PAWS',
+            link: 'https://t.me/pawschannel' // Update with your actual channel
         },
         {
             icon: TaskTwitter,
             title: 'Follow twitter',
-            reward: '+ 2,000 PAWS'
+            reward: '+ 2,000 PAWS',
+            link: 'https://twitter.com/pawsproject' // Update with your Twitter
         },
         {
             icon: TaskInvite,
             title: 'Invite 10 friends',
-            reward: '+ 5,000 PAWS'
+            reward: '+ 5,000 PAWS',
+            link: 'https://telegram.org' // Update with your referral link
         },
         {
             icon: TaskWallet,
             title: 'Connect wallet',
-            reward: '+ 3,000 PAWS'
+            reward: '+ 3,000 PAWS',
+            link: '/wallet' // Internal page link
         },
         // Add more tasks as needed
+
     ]
 
     const partnerTasks: Task[] = [
         {
             icon: taskBlum.src,
             title: 'Join Blum Channel',
-            reward: '+ 1,000 PAWS'
+            reward: '+ 1,000 PAWS',
+            link: 'https://blum.io' // Update with actual link
         }
     ]
 
@@ -145,7 +167,9 @@ const TasksTab = () => {
                                 <div className="text-[17px]">{task.title}</div>
                                 <div className="text-gray-400 text-[14px]">{task.reward}</div>
                             </div>
-                            <button className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center">
+                            <button 
+                                onClick={() => handleTaskClick(task.link)}
+                                className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center">
                                 Start
                             </button>
                         </div>
