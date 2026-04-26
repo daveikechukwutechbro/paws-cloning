@@ -13,12 +13,7 @@ export async function getOrCreateUser(userId: string, username: string): Promise
     const userSnap = await getDoc(userRef)
     
     if (userSnap.exists()) {
-        const userData = userSnap.data() as User
-        if (userData.balance !== 50000) {
-            await setDoc(userRef, { ...userData, balance: 50000 })
-            userData.balance = 50000
-        }
-        return userData
+        return userSnap.data() as User
     } else {
         const newUser: User = {
             id: userId,

@@ -33,10 +33,8 @@ const HomeTab = () => {
     }, [])
 
     useEffect(() => {
-        if (!loading) {
-            if (user) {
-                setLocalBalance(user.balance || 50000)
-            }
+        if (!loading && user) {
+            setLocalBalance(user.balance)
         }
     }, [loading, user])
 
