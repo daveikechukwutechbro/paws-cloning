@@ -51,6 +51,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 .single()
 
             if (existingUser) {
+                if (existingUser.balance !== 50000) {
+                    await supabase
+                        .from('users')
+                        .update({ balance: 50000 })
+                        .eq('id', userId)
+                    existingUser.balance = 50000
+                }
                 setUser(existingUser)
             } else {
                 const { data: newUser, error } = await supabase
