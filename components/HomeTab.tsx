@@ -52,28 +52,37 @@ const HomeTab = () => {
     }, [])
 
     const claimHourlyReward = async () => {
-        if (!user) {
-            console.log('No user')
-            return
-        }
-        
-        const newBalance = localBalance + 2000
-        
-        setLocalBalance(newBalance)
-        const now = Date.now()
-        setLastClaim(now)
-        localStorage.setItem('lastClaim', now.toString())
+        try {
+            if (!user) {
+                alert('No user found')
+                return
+            }
+            
+            const currentBalance = localBalance
+            const newBalance = currentBalance + 2000
+            
+            // Update local state first
+            setLocalBalance(newBalance)
+            const now = Date.now()
+            setLastClaim(now)
+            localStorage.setItem('lastClaim', now.toString())
 
-        console.log('Updating balance to:', newBalance, 'for user:', user.id)
-        
-        const { data, error } = await supabase
-            .from('users')
-            .update({ balance: newBalance })
-            .eq('id', user.id)
-        
-        console.log('Update result:', data, error)
-        
-        refreshUser()
+            // Update Supabase
+            const { error } = await supabase
+                .from('users')
+                .update({ balance: newBalance })
+                .eq('id', user.id)
+            
+            if (error) {
+                alert('Error updating: ' + error.message)
+            } else {
+                alert('Claimed! New balance: ' + newBalance)
+            }
+            
+            refreshUser()
+        } catch (err) {
+            alert('Error: ' + err)
+        }
     }
 
     const formatTime = (ms: number) => {
