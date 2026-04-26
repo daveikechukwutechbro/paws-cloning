@@ -77,13 +77,6 @@ const HomeTab = () => {
 
     return (
         <div className={`home-tab-con transition-all duration-300`}>
-            {/* User Info Header */}
-            <div className="text-center mt-4">
-                <span className="text-[#868686] text-sm">Logged in as: </span>
-                <span className="text-white font-medium">{displayUsername}</span>
-                {loading && <span className="text-[#007aff] ml-2">Loading...</span>}
-            </div>
-
             {/* Connect Wallet Button */}
             <button className="w-full flex justify-center mt-4">
                 <div className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2">
