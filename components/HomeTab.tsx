@@ -33,8 +33,8 @@ const HomeTab = () => {
     }, [])
 
     useEffect(() => {
-        if (!loading && user) {
-            setLocalBalance(user.balance)
+        if (!loading) {
+            setLocalBalance(user?.balance > 0 ? user.balance : 50000)
         }
     }, [loading, user])
 
@@ -49,9 +49,11 @@ const HomeTab = () => {
     }, [lastClaim])
 
     const claimHourlyReward = async () => {
-        if (user && (!lastClaim || Date.now() - lastClaim >= 3600000)) {
-            const currentBalance = displayBalance || 50000
-            const newBalance = currentBalance + 2000
+        if (!user?.id) return
+        
+        if (!lastClaim || Date.now() - lastClaim >= 3600000) {
+            const currentBalance = localBalance || 50000
+            const newBalance = Number(currentBalance) + 2000
             setLocalBalance(newBalance)
             const now = Date.now()
             setLastClaim(now)
