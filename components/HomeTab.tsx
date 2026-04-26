@@ -51,20 +51,22 @@ const HomeTab = () => {
     }, [])
 
     const claimHourlyReward = async () => {
-        const currentBalance = localBalance
-        const newBalance = currentBalance + 2000
+        const userId = user?.id || localStorage.getItem('paws_user_id')
+        if (!userId) {
+            alert('Please refresh the page first')
+            return
+        }
+        
+        const newBalance = localBalance + 2000
         
         setLocalBalance(newBalance)
         const now = Date.now()
         setLastClaim(now)
         localStorage.setItem('lastClaim', now.toString())
 
-        const userId = user?.id || localStorage.getItem('paws_user_id') || 'test_user_' + Date.now()
-        localStorage.setItem('paws_user_id', userId)
-
         await updateUserBalance(userId, newBalance)
         
-        refreshUser()
+        setTimeout(() => refreshUser(), 500)
     }
 
     const formatTime = (ms: number) => {

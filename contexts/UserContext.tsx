@@ -24,13 +24,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
             userId = tgUser.id.toString()
             username = tgUser.first_name || 'Telegram User'
         } else {
-            userId = localStorage.getItem('paws_user_id') || 'test_user_' + Date.now()
-            localStorage.setItem('paws_user_id', userId)
-            username = 'User' + userId.slice(-4)
+            userId = localStorage.getItem('paws_user_id')
+            if (!userId) {
+                userId = 'user_' + Date.now()
+                localStorage.setItem('paws_user_id', userId)
+            }
+            username = 'User'
         }
 
         try {
             const userData = await getOrCreateUser(userId, username)
+            if (userData) {
+                localStorage.setItem('paws_user_id', userId)
+            }
             setUser(userData)
         } catch (error) {
             console.error('Error:', error)

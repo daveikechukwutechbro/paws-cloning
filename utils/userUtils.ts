@@ -26,5 +26,5 @@ export async function getOrCreateUser(userId: string, username: string): Promise
 }
 
 export async function updateUserBalance(userId: string, balance: number): Promise<void> {
-    await setDoc(doc(db, 'users', userId), { balance }, { merge: true })
+    await setDoc(doc(db, 'users', userId), { balance, id: userId }, { merge: true })
 }
