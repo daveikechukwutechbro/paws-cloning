@@ -21,10 +21,11 @@ import { useUser } from '@/contexts/UserContext'
 import { supabase } from '@/utils/supabaseClient'
 
 const HomeTab = () => {
-    const { user, loading } = useUser()
+    const { user, loading, refreshUser } = useUser()
     const [localBalance, setLocalBalance] = useState(0)
     const [lastClaim, setLastClaim] = useState<number | null>(null)
     const [timeRemaining, setTimeRemaining] = useState(0)
+    const [showCommunityMenu, setShowCommunityMenu] = useState(false)
 
     useEffect(() => {
         if (user) {
@@ -60,6 +61,8 @@ const HomeTab = () => {
                     .from('users')
                     .update({ balance: newBalance })
                     .eq('id', user.id)
+                
+                refreshUser()
             }
         }
     }
@@ -74,6 +77,13 @@ const HomeTab = () => {
     const displayBalance = user ? user.balance : localBalance
     const displayUsername = user?.username || 'Guest'
     const isNewUser = user?.balance === 0
+
+    const communities = [
+        { name: 'X (Twitter)', url: 'https://x.com/GOTPAWSED' },
+        { name: 'Discord', url: 'https://discord.com/invite/pawsuplabs' },
+        { name: 'TikTok', url: 'https://www.tiktok.com/@pawslabs' },
+        { name: 'YouTube', url: 'https://www.youtube.com/@PawsUpLabs' },
+    ]
 
     return (
         <div className={`home-tab-con transition-all duration-300`}>
@@ -128,17 +138,37 @@ const HomeTab = () => {
                 </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3 px-4 mt-8 mb-8">
-                <button className="shine-effect w-full bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg px-4 py-2 flex items-center justify-between">
+            {/* Community Dropdown */}
+            <div className="px-4 mt-8 mb-8">
+                <button 
+                    onClick={() => setShowCommunityMenu(!showCommunityMenu)}
+                    className="shine-effect w-full bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg px-4 py-2 flex items-center justify-between"
+                >
                     <div className="flex items-center gap-3 font-medium">
                         <Community className="w-8 h-8" />
                         <span>Join our community</span>
                     </div>
-                    <ArrowRight className="w-6 h-6 text-gray-400" />
+                    <ArrowRight className={`w-6 h-6 text-gray-400 transition-transform ${showCommunityMenu ? 'rotate-90' : ''}`} />
                 </button>
+                
+                {showCommunityMenu && (
+                    <div className="mt-2 bg-[#1a1a1b] border-[1px] border-[#2d2d2e] rounded-lg overflow-hidden">
+                        {communities.map((community, index) => (
+                            <a 
+                                key={index}
+                                href={community.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between px-4 py-3 hover:bg-[#2d2d2e] transition-colors border-b border-[#2d2d2e] last:border-b-0"
+                            >
+                                <span className="font-medium text-white">{community.name}</span>
+                                <ArrowRight className="w-5 h-5 text-gray-400" />
+                            </a>
+                        ))}
+                    </div>
+                )}
 
-                <button className="w-full bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg px-4 py-2 flex items-center justify-between">
+                <button className="w-full bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg px-4 py-2 flex items-center justify-between mt-3">
                     <div className="flex items-center gap-3 font-medium">
                         <Star className="w-8 h-8" />
                         <span>Check your rewards</span>
