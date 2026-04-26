@@ -26,6 +26,7 @@ const HomeTab = () => {
     const [lastClaim, setLastClaim] = useState<number | null>(null)
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
+    const [userReady, setUserReady] = useState(false)
 
     useEffect(() => {
         const savedLastClaim = localStorage.getItem('lastClaim')
@@ -33,9 +34,13 @@ const HomeTab = () => {
     }, [])
 
     useEffect(() => {
-        if (!loading && user) {
-            const bal = user.balance
-            setLocalBalance(bal > 0 ? bal : 50000)
+        if (!loading) {
+            if (user) {
+                setLocalBalance(user.balance || 50000)
+                setUserReady(true)
+            } else {
+                setUserReady(true)
+            }
         }
     }, [loading, user])
 
@@ -52,17 +57,6 @@ const HomeTab = () => {
     }, [])
 
     const claimHourlyReward = async () => {
-        if (loading) {
-            alert('Loading... please wait')
-            return
-        }
-        
-        if (!user) {
-            alert('User not found, refreshing...')
-            await refreshUser()
-            return
-        }
-        
         const currentBalance = localBalance
         const newBalance = currentBalance + 2000
         
@@ -71,12 +65,12 @@ const HomeTab = () => {
         setLastClaim(now)
         localStorage.setItem('lastClaim', now.toString())
 
+        const userId = user?.id || localStorage.getItem('paws_user_id') || 'test_user_' + Date.now()
+        localStorage.setItem('paws_user_id', userId)
+
         await supabase
             .from('users')
-            .update({ balance: newBalance })
-            .eq('id', user.id)
-        
-        alert('Claimed! ' + newBalance + ' PAWS')
+            .upsert({ id: userId, balance: newBalance })
         
         refreshUser()
     }
@@ -88,7 +82,7 @@ const HomeTab = () => {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
     }
 
-    const displayBalance = (user && user.balance > 0) ? user.balance : localBalance
+    const displayBalance = localBalance
     const displayUsername = user?.username || 'Guest'
     const isNewUser = user?.balance === 50000
 
@@ -141,10 +135,6 @@ const HomeTab = () => {
                             <div className="text-2xl font-bold text-[#007aff]">{formatTime(timeRemaining)}</div>
                             <div className="text-sm text-[#868686]">until next claim</div>
                         </div>
-                    ) : loading ? (
-                        <button disabled className="w-full bg-gray-500 text-white py-2 rounded-lg font-medium">
-                            Loading...
-                        </button>
                     ) : (
                         <button
                             onClick={claimHourlyReward}
