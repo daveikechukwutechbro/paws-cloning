@@ -43,7 +43,7 @@ const HomeTab = () => {
             const saved = localStorage.getItem('lastClaim')
             if (saved) {
                 const lastClaimTime = parseInt(saved)
-                const remaining = 3600000 - (Date.now() - lastClaimTime)
+                const remaining = 180000 - (Date.now() - lastClaimTime)
                 setTimeRemaining(Math.max(0, remaining))
             }
         }, 1000)
