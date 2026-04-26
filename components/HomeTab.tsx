@@ -33,8 +33,9 @@ const HomeTab = () => {
     }, [])
 
     useEffect(() => {
-        if (!loading) {
-            setLocalBalance(user?.balance > 0 ? user.balance : 5000000)
+        if (!loading && user) {
+            const bal = user.balance
+            setLocalBalance(bal > 0 ? bal : 50000)
         }
     }, [loading, user])
 
@@ -51,28 +52,26 @@ const HomeTab = () => {
     }, [])
 
     const claimHourlyReward = async () => {
-        if (!user) return
-        
-        const now = Date.now()
-        const savedClaim = localStorage.getItem('lastClaim')
-        const lastClaimTime = savedClaim ? parseInt(savedClaim) : 0
-        
-        if (savedClaim && now - lastClaimTime < 3600000) {
-            console.log('Claim on cooldown')
+        if (!user) {
+            console.log('No user')
             return
         }
         
-        const currentBalance = localBalance || 50000
-        const newBalance = Number(currentBalance) + 2000
+        const newBalance = localBalance + 2000
         
         setLocalBalance(newBalance)
+        const now = Date.now()
         setLastClaim(now)
         localStorage.setItem('lastClaim', now.toString())
 
-        await supabase
+        console.log('Updating balance to:', newBalance, 'for user:', user.id)
+        
+        const { data, error } = await supabase
             .from('users')
             .update({ balance: newBalance })
             .eq('id', user.id)
+        
+        console.log('Update result:', data, error)
         
         refreshUser()
     }
