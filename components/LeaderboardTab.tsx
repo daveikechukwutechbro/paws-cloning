@@ -23,13 +23,14 @@ type LeaderboardItem = {
 }
 
 const LeaderboardTab = () => {
-    const { user } = useUser()
-    const [userRank, setUserRank] = useState('#--')
+    const { user, loading } = useUser()
+    const [userRank, setUserRank] = useState('--')
 
     useEffect(() => {
-        if (user) {
-            const randomRank = Math.floor(Math.random() * 1000000) + 5000000
-            setUserRank('#' + randomRank.toLocaleString())
+        if (user && user.balance > 0) {
+            const totalUsers = 23253686
+            const estimatedRank = Math.floor(totalUsers * (1 - (user.balance / 100000000)))
+            setUserRank(Math.max(1, estimatedRank).toLocaleString())
         }
     }, [user])
 
@@ -71,11 +72,11 @@ const LeaderboardTab = () => {
                                 <PawsLogo className="w-full h-full" />
                             </div>
                             <div className="text-black font-medium">
-                                <div className="text-base">{user?.username || 'You'}</div>
-                                <div className="text-xs">{(user?.balance || 0).toLocaleString()} PAWS</div>
+                                <div className="text-base">{loading ? 'Loading...' : (user?.username || 'You')}</div>
+                                <div className="text-xs">{loading ? '--' : (user?.balance || 0).toLocaleString()} PAWS</div>
                             </div>
                         </div>
-                        <div className="text-black">{userRank}</div>
+                        <div className="text-black">#{userRank}</div>
                     </div>
                 </div>
 
