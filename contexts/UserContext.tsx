@@ -24,8 +24,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
             userId = tgUser.id.toString()
             username = tgUser.first_name || 'Telegram User'
         } else {
-            userId = localStorage.getItem('paws_user_id')
-            if (!userId) {
+            const storedId = localStorage.getItem('paws_user_id')
+            if (storedId) {
+                userId = storedId
+            } else {
                 userId = 'user_' + Date.now()
                 localStorage.setItem('paws_user_id', userId)
             }
