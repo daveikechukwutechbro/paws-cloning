@@ -17,29 +17,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
         let userId = ''
         let username = ''
         
+        // Check for Telegram WebApp
         const tg = (window as any).Telegram?.WebApp
         const tgUser = tg?.initDataUnsafe?.user
         
-        if (tgUser) {
+        if (tgUser?.id) {
             userId = tgUser.id.toString()
-            username = tgUser.first_name || 'Telegram User'
+            username = tgUser.first_name || tgUser.username || 'Telegram User'
+            console.log('Telegram User:', tgUser)
         } else {
-            const storedId = localStorage.getItem('paws_user_id')
-            if (storedId) {
-                userId = storedId
-            } else {
-                userId = 'user_' + Date.now()
-                localStorage.setItem('paws_user_id', userId)
+            // Fallback - create unique ID per session
+            let storedId = localStorage.getItem('paws_user_id')
+            if (!storedId) {
+                storedId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+                localStorage.setItem('paws_user_id', storedId)
             }
-            username = 'User'
+            userId = storedId
+            username = 'User' + userId.slice(-4)
         }
 
         try {
             const userData = await getOrCreateUser(userId, username)
             if (userData) {
-                localStorage.setItem('paws_user_id', userId)
+                setUser(userData)
             }
-            setUser(userData)
         } catch (error) {
             console.error('Error:', error)
         } finally {
