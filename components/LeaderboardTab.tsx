@@ -12,6 +12,8 @@
 import PawsLogo from '@/icons/PawsLogo'
 import { trophy } from '@/images';
 import Image from 'next/image'
+import { useState, useEffect } from 'react'
+import { useUser } from '@/contexts/UserContext'
 
 type LeaderboardItem = {
     wallet: string;
@@ -21,6 +23,16 @@ type LeaderboardItem = {
 }
 
 const LeaderboardTab = () => {
+    const { user } = useUser()
+    const [userRank, setUserRank] = useState('#--')
+
+    useEffect(() => {
+        if (user) {
+            const randomRank = Math.floor(Math.random() * 1000000) + 5000000
+            setUserRank('#' + randomRank.toLocaleString())
+        }
+    }, [user])
+
     const leaderboardData: LeaderboardItem[] = [
         { wallet: "Pishnahad_Sup", balance: "53,137,490", place: "🥇" },
         { wallet: "imGet", balance: "52,374,426", place: "🥈" },
@@ -59,11 +71,11 @@ const LeaderboardTab = () => {
                                 <PawsLogo className="w-full h-full" />
                             </div>
                             <div className="text-black font-medium">
-                                <div className="text-base">nikandr_s</div>
-                                <div className="text-xs">4,646 PAWS</div>
+                                <div className="text-base">{user?.username || 'You'}</div>
+                                <div className="text-xs">{(user?.balance || 0).toLocaleString()} PAWS</div>
                             </div>
                         </div>
-                        <div className="text-black">#15,355,328</div>
+                        <div className="text-black">{userRank}</div>
                     </div>
                 </div>
 
