@@ -22,7 +22,7 @@ import { updateUserBalance } from '@/utils/userUtils'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
-    const [localBalance, setLocalBalance] = useState(50000)
+    const [localBalance, setLocalBalance] = useState(0)
     const [lastClaim, setLastClaim] = useState<number | null>(null)
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
@@ -33,8 +33,8 @@ const HomeTab = () => {
     }, [])
 
     useEffect(() => {
-        if (!loading && user) {
-            setLocalBalance(user.balance)
+        if (!loading) {
+            setLocalBalance(user?.balance ?? 50000)
         }
     }, [loading, user])
 

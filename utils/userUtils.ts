@@ -26,5 +26,13 @@ export async function getOrCreateUser(userId: string, username: string): Promise
 }
 
 export async function updateUserBalance(userId: string, balance: number): Promise<void> {
-    await setDoc(doc(db, 'users', userId), { balance, id: userId }, { merge: true })
+    const userRef = doc(db, 'users', userId)
+    const userSnap = await getDoc(userRef)
+    const currentData = userSnap.data() || {}
+    
+    await setDoc(userRef, {
+        ...currentData,
+        balance: balance,
+        id: userId
+    }, { merge: true })
 }
