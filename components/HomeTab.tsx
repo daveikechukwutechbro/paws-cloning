@@ -22,7 +22,15 @@ import { updateUserBalance } from '@/utils/userUtils'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
-    const [localBalance, setLocalBalance] = useState(0)
+    
+    // Load balance from localStorage immediately, then update from Firebase
+    const [localBalance, setLocalBalance] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('paws_balance')
+            return saved ? parseInt(saved) : 50000
+        }
+        return 50000
+    })
     const [lastClaim, setLastClaim] = useState<number | null>(null)
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
@@ -32,11 +40,18 @@ const HomeTab = () => {
         if (savedLastClaim) setLastClaim(parseInt(savedLastClaim))
     }, [])
 
+    // Update from Firebase when loaded
     useEffect(() => {
-        if (!loading) {
-            setLocalBalance(user?.balance ?? 50000)
+        if (!loading && user?.balance) {
+            setLocalBalance(user.balance)
+            localStorage.setItem('paws_balance', user.balance.toString())
         }
     }, [loading, user])
+
+    // Save to localStorage whenever balance changes
+    useEffect(() => {
+        localStorage.setItem('paws_balance', localBalance.toString())
+    }, [localBalance])
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -58,8 +73,8 @@ const HomeTab = () => {
         }
         
         const newBalance = localBalance + 2000
-        
         setLocalBalance(newBalance)
+        
         const now = Date.now()
         setLastClaim(now)
         localStorage.setItem('lastClaim', now.toString())
@@ -79,6 +94,16 @@ const HomeTab = () => {
     const displayBalance = localBalance
     const displayUsername = user?.username || 'Guest'
     const isNewUser = user?.balance === 50000
+
+    // Show loading while syncing with Firebase
+    if (loading && localBalance === 50000) {
+        return (
+            <div className="home-tab-con flex flex-col items-center justify-center min-h-[400px]">
+                <PawsLogo className="w-20 h-20 animate-pulse" />
+                <div className="mt-4 text-gray-400">Loading...</div>
+            </div>
+        )
+    }
 
     const communities = [
         { name: 'X (Twitter)', url: 'https://x.com/GOTPAWSED' },
