@@ -19,7 +19,7 @@ import { sparkles } from '@/images'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance, updateUserUpgrade } from '@/utils/userUtils'
-import { connectWallet, disconnectWallet, getWalletAddress } from '@/utils/tonService'
+import { connectWallet, disconnectWallet, getWalletAddress, isWalletConnected } from '@/utils/tonService'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -157,13 +157,13 @@ const HomeTab = () => {
             ) : (
                 <button 
                     onClick={async () => {
-                        const connected = await connectWallet()
-                        if (connected) {
+                        const result = await connectWallet()
+                        if (result.success) {
                             setWalletConnected(true)
                             const address = getWalletAddress()
                             alert('Wallet connected: ' + address)
                         } else {
-                            alert('Please open in Telegram to connect wallet')
+                            alert(result.error || 'Connection failed. Please try again.')
                         }
                     }}
                     className="w-full flex justify-center mt-4"
