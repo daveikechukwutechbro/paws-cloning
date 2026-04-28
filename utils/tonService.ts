@@ -1,42 +1,27 @@
-import { TonConnectUI, TonConnect } from '@tonconnect/sdk'
+import { TonConnectUIProvider } from '@tonconnect/sdk-react'
 
-let tonConnect: TonConnect | null = null
+export const tonConnectUI = new TonConnectUIProvider({
+    manifestUrl: 'https://paws-clone.vercel.app/tonconnect-manifest.json'
+})
 
-export function initTonConnect() {
-    if (typeof window !== 'undefined' && !tonConnect) {
-        tonConnect = new TonConnect({
-            manifestUrl: 'https://your-app.vercel.app/tonconnect-manifest.json'
-        })
-    }
-    return tonConnect
-}
-
-export async function connectWallet(): Promise<string | null> {
+export async function connectTonWallet(): Promise<boolean> {
     try {
-        const connector = initTonConnect()
-        if (!connector) return null
-        
-        const result = await connector.connect()
-        if (result) {
-            return result.account.address
-        }
-        return null
-    } catch (error) {
-        console.error('Connect error:', error)
-        return null
+        await tonConnectUI.connect()
+        return true
+    } catch (e) {
+        console.error('Failed to connect:', e)
+        return false
     }
 }
 
-export function disconnectWallet() {
-    if (tonConnect) {
-        tonConnect.disconnect()
-    }
+export function disconnectTonWallet() {
+    tonConnectUI.disconnect()
 }
 
-export function isWalletConnected(): boolean {
-    return tonConnect?.isConnected || false
+export function getTonWalletAddress(): string | null {
+    return tonConnectUI.account?.address || null
 }
 
-export function getWalletAddress(): string | null {
-    return tonConnect?.account?.address || null
+export function isTonConnected(): boolean {
+    return !!tonConnectUI.account
 }

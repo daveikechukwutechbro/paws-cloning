@@ -18,7 +18,7 @@ import ArrowRight from '@/icons/ArrowRight'
 import { sparkles } from '@/images'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
-import { updateUserBalance } from '@/utils/userUtils'
+import { updateUserBalance, updateUserUpgrade } from '@/utils/userUtils'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -50,6 +50,14 @@ const HomeTab = () => {
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [walletConnected, setWalletConnected] = useState(false)
     const [showWalletMenu, setShowWalletMenu] = useState(false)
+    const [showBuyMenu, setShowBuyMenu] = useState(false)
+    
+    const buyPackages = [
+        { name: '1,000 PAWS', price: '$1', amount: 1000 },
+        { name: '5,000 PAWS', price: '$4', amount: 5000 },
+        { name: '10,000 PAWS', price: '$7', amount: 10000 },
+        { name: '50,000 PAWS', price: '$30', amount: 50000 },
+    ]
 
     useEffect(() => {
         const savedLastClaim = localStorage.getItem(timerKey)
@@ -232,6 +240,46 @@ const HomeTab = () => {
                     </div>
                     <ArrowRight className="w-6 h-6 text-gray-400" />
                 </button>
+
+                {/* Buy PAWS Button */}
+                <button 
+                    onClick={() => setShowBuyMenu(!showBuyMenu)}
+                    className="w-full bg-[#007aff] border border-[#007aff] rounded-lg px-4 py-3 flex items-center justify-between mt-3"
+                >
+                    <div className="flex items-center gap-3 font-medium text-white">
+                        <PawsLogo className="w-8 h-8" />
+                        <span>Buy PAWS</span>
+                    </div>
+                    <ArrowRight className={`w-6 h-6 text-white transition-transform ${showBuyMenu ? 'rotate-90' : ''}`} />
+                </button>
+
+                {showBuyMenu && (
+                    <div className="mt-2 bg-[#1a1a1b] border-[1px] border-[#2d2d2e] rounded-lg overflow-hidden p-4">
+                        <div className="text-center mb-4">
+                            <div className="text-sm text-gray-400 mb-2">Send TON to this address:</div>
+                            <div className="text-xs bg-[#2d2d2e] p-2 rounded break-all text-white">
+                                UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J
+                            </div>
+                            <button 
+                                onClick={() => navigator.clipboard.writeText('UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J')}
+                                className="mt-2 text-[#007aff] text-sm"
+                            >
+                                Copy Address
+                            </button>
+                        </div>
+                        <div className="text-center text-xs text-gray-500 mb-4">
+                            After sending, contact admin to credit your PAWS
+                        </div>
+                        <div className="space-y-2">
+                            {buyPackages.map((pkg, index) => (
+                                <div key={index} className="flex justify-between items-center p-2 bg-[#2d2d2e] rounded">
+                                    <span className="text-white">{pkg.name}</span>
+                                    <span className="text-gray-400">{pkg.price}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

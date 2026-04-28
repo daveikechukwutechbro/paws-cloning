@@ -36,3 +36,15 @@ export async function updateUserBalance(userId: string, balance: number): Promis
         id: userId
     }, { merge: true })
 }
+
+export async function updateUserUpgrade(userId: string, upgradeType: string, level: number): Promise<void> {
+    const userRef = doc(db, 'users', userId)
+    const userSnap = await getDoc(userRef)
+    const currentData = userSnap.data() || {}
+    
+    await setDoc(userRef, {
+        ...currentData,
+        [`upgrade_${upgradeType}`]: level,
+        id: userId
+    }, { merge: true })
+}
