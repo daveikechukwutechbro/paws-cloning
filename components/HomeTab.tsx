@@ -19,7 +19,7 @@ import { sparkles } from '@/images'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance, updateUserUpgrade } from '@/utils/userUtils'
-import { tonConnector, connectWallet, disconnectWallet, getWalletAddress, isConnected } from '@/utils/tonService'
+import { connectWallet, disconnectWallet, getWalletAddress } from '@/utils/tonService'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
