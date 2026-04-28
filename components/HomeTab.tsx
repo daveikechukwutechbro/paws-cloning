@@ -48,7 +48,8 @@ const HomeTab = () => {
     })
     const [lastClaim, setLastClaim] = useState<number | null>(null)
     const [timeRemaining, setTimeRemaining] = useState(0)
-    const [showCommunityMenu, setShowCommunityMenu] = useState(false)
+    const [walletConnected, setWalletConnected] = useState(false)
+    const [showWalletMenu, setShowWalletMenu] = useState(false)
 
     useEffect(() => {
         const savedLastClaim = localStorage.getItem(timerKey)
@@ -129,12 +130,27 @@ const HomeTab = () => {
     return (
         <div className={`home-tab-con transition-all duration-300`}>
             {/* Connect Wallet Button */}
-            <button className="w-full flex justify-center mt-4">
-                <div className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2">
-                    <Wallet className="w-5 h-5" />
-                    <span>Connect wallet</span>
-                </div>
-            </button>
+            {walletConnected ? (
+                <button 
+                    onClick={() => setShowWalletMenu(!showWalletMenu)}
+                    className="w-full flex justify-center mt-4"
+                >
+                    <div className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2">
+                        <Wallet className="w-5 h-5" />
+                        <span>Wallet Connected</span>
+                    </div>
+                </button>
+            ) : (
+                <button 
+                    onClick={() => setWalletConnected(true)}
+                    className="w-full flex justify-center mt-4"
+                >
+                    <div className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2">
+                        <Wallet className="w-5 h-5" />
+                        <span>Connect wallet</span>
+                    </div>
+                </button>
+            )}
 
             {/* PAWS Balance */}
             <div className="flex flex-col items-center mt-8">
