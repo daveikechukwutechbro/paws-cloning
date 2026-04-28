@@ -23,10 +23,25 @@ import { updateUserBalance } from '@/utils/userUtils'
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
     
+    // Get user ID - wait for user to load first
+    const [userId, setUserId] = useState('')
+    
+    useEffect(() => {
+        if (user?.id) {
+            setUserId(user.id)
+        } else {
+            const stored = localStorage.getItem('paws_user_id')
+            if (stored) setUserId(stored)
+        }
+    }, [user])
+    
+    const timerKey = `lastClaim_${userId}`
+    const balanceKey = `paws_balance_${userId}`
+    
     // Load balance from localStorage immediately, then update from Firebase
     const [localBalance, setLocalBalance] = useState(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('paws_balance')
+            const saved = localStorage.getItem(balanceKey)
             return saved ? parseInt(saved) : 50000
         }
         return 50000
@@ -36,26 +51,26 @@ const HomeTab = () => {
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
 
     useEffect(() => {
-        const savedLastClaim = localStorage.getItem('lastClaim')
+        const savedLastClaim = localStorage.getItem(timerKey)
         if (savedLastClaim) setLastClaim(parseInt(savedLastClaim))
-    }, [])
+    }, [timerKey])
 
     // Update from Firebase when loaded
     useEffect(() => {
         if (!loading && user?.balance) {
             setLocalBalance(user.balance)
-            localStorage.setItem('paws_balance', user.balance.toString())
+            localStorage.setItem(balanceKey, user.balance.toString())
         }
-    }, [loading, user])
+    }, [loading, user, balanceKey])
 
     // Save to localStorage whenever balance changes
     useEffect(() => {
-        localStorage.setItem('paws_balance', localBalance.toString())
-    }, [localBalance])
+        localStorage.setItem(balanceKey, localBalance.toString())
+    }, [localBalance, balanceKey])
 
     useEffect(() => {
         const interval = setInterval(() => {
-            const saved = localStorage.getItem('lastClaim')
+            const saved = localStorage.getItem(timerKey)
             if (saved) {
                 const lastClaimTime = parseInt(saved)
                 const remaining = 180000 - (Date.now() - lastClaimTime)
@@ -63,10 +78,9 @@ const HomeTab = () => {
             }
         }, 1000)
         return () => clearInterval(interval)
-    }, [])
+    }, [timerKey])
 
     const claimHourlyReward = async () => {
-        const userId = user?.id || localStorage.getItem('paws_user_id')
         if (!userId) {
             alert('Please refresh the page first')
             return
@@ -77,7 +91,7 @@ const HomeTab = () => {
         
         const now = Date.now()
         setLastClaim(now)
-        localStorage.setItem('lastClaim', now.toString())
+        localStorage.setItem(timerKey, now.toString())
 
         await updateUserBalance(userId, newBalance)
         

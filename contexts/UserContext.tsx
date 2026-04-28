@@ -17,14 +17,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         let userId = ''
         let username = ''
         
-        // Check for Telegram WebApp
+        // Check for Telegram WebApp - use the exact user ID from Telegram
         const tg = (window as any).Telegram?.WebApp
         const tgUser = tg?.initDataUnsafe?.user
         
         if (tgUser?.id) {
-            userId = tgUser.id.toString()
+            // Use Telegram user ID directly - this is unique per account
+            userId = 'tg_' + tgUser.id.toString()
             username = tgUser.first_name || tgUser.username || 'Telegram User'
-            console.log('Telegram User:', tgUser)
         } else {
             // Fallback - create unique ID per session
             let storedId = localStorage.getItem('paws_user_id')
