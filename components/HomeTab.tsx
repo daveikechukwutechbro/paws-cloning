@@ -19,6 +19,7 @@ import { sparkles } from '@/images'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance, updateUserUpgrade } from '@/utils/userUtils'
+import { tonConnector, connectWallet, disconnectWallet, getWalletAddress, isConnected } from '@/utils/tonService'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -141,7 +142,11 @@ const HomeTab = () => {
             {/* Connect Wallet Button */}
             {walletConnected ? (
                 <button 
-                    onClick={() => setShowWalletMenu(!showWalletMenu)}
+                    onClick={() => {
+                        disconnectWallet()
+                        setWalletConnected(false)
+                        alert('Wallet disconnected')
+                    }}
                     className="w-full flex justify-center mt-4"
                 >
                     <div className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2">
@@ -151,7 +156,16 @@ const HomeTab = () => {
                 </button>
             ) : (
                 <button 
-                    onClick={() => setWalletConnected(true)}
+                    onClick={async () => {
+                        const connected = await connectWallet()
+                        if (connected) {
+                            setWalletConnected(true)
+                            const address = getWalletAddress()
+                            alert('Wallet connected: ' + address)
+                        } else {
+                            alert('Please open in Telegram to connect wallet')
+                        }
+                    }}
                     className="w-full flex justify-center mt-4"
                 >
                     <div className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2">

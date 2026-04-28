@@ -1,8 +1,38 @@
-// Placeholder for TON wallet functionality
-// For now, users send TON manually to the wallet address
+import { TonConnect } from '@tonconnect/sdk'
 
-export const WALLET_ADDRESS = 'UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J'
+// Initialize TON Connect
+const tonConnect = new TonConnect({
+    manifestUrl: 'https://paws-clone.vercel.app/tonconnect-manifest.json'
+})
 
-export function getWalletAddress(): string {
-    return WALLET_ADDRESS
+export const tonConnector = tonConnect
+
+export async function connectWallet(): Promise<boolean> {
+    try {
+        const isSupported = tonConnect.isWalletSupported()
+        if (!isSupported) {
+            console.log('Wallet not supported')
+            return false
+        }
+        
+        await tonConnect.connect()
+        return true
+    } catch (error) {
+        console.error('Connect error:', error)
+        return false
+    }
 }
+
+export function disconnectWallet() {
+    tonConnect.disconnect()
+}
+
+export function getWalletAddress(): string | null {
+    return tonConnect.account?.address || null
+}
+
+export function isConnected(): boolean {
+    return tonConnect.connected
+}
+
+export { tonConnect }
