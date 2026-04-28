@@ -20,20 +20,14 @@ export async function connectWallet(): Promise<{ success: boolean; error?: strin
             return { success: true }
         }
         
-        // Connect and wait for result
-        await connector.connect()
-        
-        // Small delay to check connection
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        if (connector.connected) {
-            // Save connection status
+        // Use the restored connection if available
+        if (connector.account) {
             localStorage.setItem('ton_wallet_connected', 'true')
-            localStorage.setItem('ton_wallet_address', connector.account?.address || '')
+            localStorage.setItem('ton_wallet_address', connector.account.address || '')
             return { success: true }
         }
         
-        return { success: false, error: 'Connection canceled' }
+        return { success: false, error: 'No wallet found. Please open in Telegram.' }
     } catch (error: any) {
         console.error('Wallet connect error:', error)
         return { success: false, error: error.message || 'Failed to connect' }
