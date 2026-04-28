@@ -9,14 +9,9 @@ export const tonConnector = tonConnect
 
 export async function connectWallet(): Promise<boolean> {
     try {
-        const isSupported = tonConnect.isWalletSupported()
-        if (!isSupported) {
-            console.log('Wallet not supported')
-            return false
-        }
-        
+        // Try to connect - this will open the wallet
         await tonConnect.connect()
-        return true
+        return tonConnect.connected
     } catch (error) {
         console.error('Connect error:', error)
         return false
