@@ -1,27 +1,8 @@
-import { TonConnectUIProvider } from '@tonconnect/sdk-react'
+// Placeholder for TON wallet functionality
+// For now, users send TON manually to the wallet address
 
-export const tonConnectUI = new TonConnectUIProvider({
-    manifestUrl: 'https://paws-clone.vercel.app/tonconnect-manifest.json'
-})
+export const WALLET_ADDRESS = 'UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J'
 
-export async function connectTonWallet(): Promise<boolean> {
-    try {
-        await tonConnectUI.connect()
-        return true
-    } catch (e) {
-        console.error('Failed to connect:', e)
-        return false
-    }
-}
-
-export function disconnectTonWallet() {
-    tonConnectUI.disconnect()
-}
-
-export function getTonWalletAddress(): string | null {
-    return tonConnectUI.account?.address || null
-}
-
-export function isTonConnected(): boolean {
-    return !!tonConnectUI.account
+export function getWalletAddress(): string {
+    return WALLET_ADDRESS
 }
