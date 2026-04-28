@@ -51,6 +51,7 @@ const HomeTab = () => {
     const [walletConnected, setWalletConnected] = useState(false)
     const [showWalletMenu, setShowWalletMenu] = useState(false)
     const [showBuyMenu, setShowBuyMenu] = useState(false)
+    const [showCommunityMenu, setShowCommunityMenu] = useState(false)
     
     const buyPackages = [
         { name: '1,000 PAWS', price: '$1', amount: 1000 },
