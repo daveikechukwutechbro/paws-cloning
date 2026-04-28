@@ -30,9 +30,9 @@ export async function restoreWalletConnection() {
     return false
 }
 
-function getWalletUniversalLink(wallet: SupportedWallet) {
+async function getWalletUniversalLink(wallet: SupportedWallet) {
     const connector = initTonConnect()
-    const wallets = connector.getWallets()
+    const wallets = await connector.getWallets()
 
     const universalLinks: Record<SupportedWallet, string[]> = {
         'telegram-wallet': ['telegram-wallet', 'wallet in telegram', 'ton space', 'tonhub'],
@@ -94,7 +94,7 @@ export async function connectWalletWithProvider(
             return { success: true }
         }
 
-        const connectUrl = getWalletUniversalLink(wallet)
+        const connectUrl = await getWalletUniversalLink(wallet)
 
         if (!connectUrl) {
             return {
