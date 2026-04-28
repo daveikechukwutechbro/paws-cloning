@@ -18,8 +18,15 @@ import ArrowRight from '@/icons/ArrowRight'
 import { sparkles } from '@/images'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
-import { updateUserBalance, updateUserUpgrade } from '@/utils/userUtils'
-import { connectWallet, disconnectWallet, getWalletAddress, isWalletConnected } from '@/utils/tonService'
+import { updateUserBalance } from '@/utils/userUtils'
+import {
+    connectWalletWithProvider,
+    disconnectWallet,
+    getWalletAddress,
+    isWalletConnected,
+    restoreWalletConnection,
+    SupportedWallet
+} from '@/utils/tonService'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -47,10 +54,9 @@ const HomeTab = () => {
         }
         return 50000
     })
-    const [lastClaim, setLastClaim] = useState<number | null>(null)
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [walletConnected, setWalletConnected] = useState(false)
-    const [showWalletMenu, setShowWalletMenu] = useState(false)
+    const [showWalletOptions, setShowWalletOptions] = useState(false)
     const [showBuyMenu, setShowBuyMenu] = useState(false)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
     
@@ -63,8 +69,22 @@ const HomeTab = () => {
 
     useEffect(() => {
         const savedLastClaim = localStorage.getItem(timerKey)
-        if (savedLastClaim) setLastClaim(parseInt(savedLastClaim))
+        if (savedLastClaim) {
+            // keep timer active based on last claim timestamp
+            parseInt(savedLastClaim)
+        }
     }, [timerKey])
+
+    useEffect(() => {
+        const initializeWalletState = async () => {
+            const restored = await restoreWalletConnection()
+            if (restored || isWalletConnected()) {
+                setWalletConnected(true)
+            }
+        }
+
+        initializeWalletState()
+    }, [])
 
     // Update from Firebase when loaded
     useEffect(() => {
@@ -101,7 +121,6 @@ const HomeTab = () => {
         setLocalBalance(newBalance)
         
         const now = Date.now()
-        setLastClaim(now)
         localStorage.setItem(timerKey, now.toString())
 
         await updateUserBalance(userId, newBalance)
@@ -117,8 +136,33 @@ const HomeTab = () => {
     }
 
     const displayBalance = localBalance
-    const displayUsername = user?.username || 'Guest'
     const isNewUser = user?.balance === 50000
+
+    const walletOptions: { key: SupportedWallet; label: string }[] = [
+        { key: 'telegram-wallet', label: 'Telegram TON Wallet' },
+        { key: 'tonkeeper', label: 'Tonkeeper' },
+        { key: 'mytonwallet', label: 'MyTonWallet' }
+    ]
+
+    const handleConnectWallet = async (provider: SupportedWallet) => {
+        const result = await connectWalletWithProvider(provider)
+
+        if (!result.success) {
+            alert(result.error || 'Connection failed. Please try again.')
+            return
+        }
+
+        if (result.connectUrl) {
+            window.open(result.connectUrl, '_blank')
+            setShowWalletOptions(false)
+            alert('Complete the connection in your wallet app, then return here.')
+            return
+        }
+
+        setWalletConnected(true)
+        setShowWalletOptions(false)
+        alert('Wallet connected: ' + (getWalletAddress() || 'Connected'))
+    }
 
     // Show loading while syncing with Firebase
     if (loading && localBalance === 50000) {
@@ -155,24 +199,29 @@ const HomeTab = () => {
                     </div>
                 </button>
             ) : (
-                <button 
-                    onClick={async () => {
-                        const result = await connectWallet()
-                        if (result.success) {
-                            setWalletConnected(true)
-                            const address = getWalletAddress()
-                            alert('Wallet connected: ' + address)
-                        } else {
-                            alert(result.error || 'Connection failed. Please try again.')
-                        }
-                    }}
-                    className="w-full flex justify-center mt-4"
-                >
-                    <div className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2">
+                <div className="w-full flex flex-col items-center mt-4 px-4">
+                    <button
+                        onClick={() => setShowWalletOptions((prev) => !prev)}
+                        className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2"
+                    >
                         <Wallet className="w-5 h-5" />
                         <span>Connect wallet</span>
-                    </div>
-                </button>
+                    </button>
+
+                    {showWalletOptions && (
+                        <div className="w-full max-w-sm mt-3 bg-[#1a1a1b] border border-[#2d2d2e] rounded-lg overflow-hidden">
+                            {walletOptions.map((wallet) => (
+                                <button
+                                    key={wallet.key}
+                                    onClick={() => handleConnectWallet(wallet.key)}
+                                    className="w-full text-left px-4 py-3 hover:bg-[#2d2d2e] transition-colors border-b border-[#2d2d2e] last:border-b-0"
+                                >
+                                    {wallet.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             )}
 
             {/* PAWS Balance */}
