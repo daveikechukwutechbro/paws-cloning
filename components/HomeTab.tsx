@@ -56,6 +56,7 @@ const HomeTab = () => {
     })
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [walletConnected, setWalletConnected] = useState(false)
+    const [walletAddress, setWalletAddress] = useState<string | null>(null)
     const [showWalletOptions, setShowWalletOptions] = useState(false)
     const [showBuyMenu, setShowBuyMenu] = useState(false)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
@@ -80,6 +81,7 @@ const HomeTab = () => {
             const restored = await restoreWalletConnection()
             if (restored || isWalletConnected()) {
                 setWalletConnected(true)
+                setWalletAddress(getWalletAddress())
             }
         }
 
@@ -160,8 +162,14 @@ const HomeTab = () => {
         }
 
         setWalletConnected(true)
+        setWalletAddress(getWalletAddress())
         setShowWalletOptions(false)
         alert('Wallet connected: ' + (getWalletAddress() || 'Connected'))
+    }
+
+    const formatWalletAddress = (address: string) => {
+        if (address.length <= 12) return address
+        return `${address.slice(0, 6)}...${address.slice(-6)}`
     }
 
     // Show loading while syncing with Firebase
@@ -185,19 +193,46 @@ const HomeTab = () => {
         <div className={`home-tab-con transition-all duration-300`}>
             {/* Connect Wallet Button */}
             {walletConnected ? (
-                <button 
-                    onClick={() => {
-                        disconnectWallet()
-                        setWalletConnected(false)
-                        alert('Wallet disconnected')
-                    }}
-                    className="w-full flex justify-center mt-4"
-                >
-                    <div className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2">
+                <div className="w-full flex flex-col items-center mt-4 px-4">
+                    <button
+                        onClick={() => setShowWalletOptions((prev) => !prev)}
+                        className="bg-[#007aff] text-white px-3 py-0.5 rounded-full flex items-center gap-2"
+                    >
                         <Wallet className="w-5 h-5" />
-                        <span>Wallet Connected</span>
-                    </div>
-                </button>
+                        <span>{walletAddress ? formatWalletAddress(walletAddress) : 'Connected'}</span>
+                    </button>
+
+                    {showWalletOptions && (
+                        <div className="w-full max-w-sm mt-3 bg-[#1a1a1b] border border-[#2d2d2e] rounded-lg overflow-hidden">
+                            <button
+                                onClick={() => {
+                                    disconnectWallet()
+                                    setWalletConnected(false)
+                                    setWalletAddress(null)
+                                    setShowWalletOptions(false)
+                                    alert('Wallet disconnected')
+                                }}
+                                className="w-full text-left px-4 py-3 hover:bg-[#2d2d2e] transition-colors border-b border-[#2d2d2e]"
+                            >
+                                Disconnect wallet
+                            </button>
+
+                            <div className="px-4 py-2 text-xs text-[#868686] border-b border-[#2d2d2e]">
+                                Change wallet
+                            </div>
+
+                            {walletOptions.map((wallet) => (
+                                <button
+                                    key={wallet.key}
+                                    onClick={() => handleConnectWallet(wallet.key)}
+                                    className="w-full text-left px-4 py-3 hover:bg-[#2d2d2e] transition-colors border-b border-[#2d2d2e] last:border-b-0"
+                                >
+                                    {wallet.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             ) : (
                 <div className="w-full flex flex-col items-center mt-4 px-4">
                     <button
