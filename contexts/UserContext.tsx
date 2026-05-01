@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { getOrCreateUser, User } from '@/utils/userUtils'
+import { applyReferralReward, getOrCreateUser, User } from '@/utils/userUtils'
 
 type UserContextType = {
     user: User | null
@@ -36,10 +36,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
             username = 'User' + userId.slice(-4)
         }
 
+        // Get ref code from URL or Telegram start_param
+        const params = new URLSearchParams(window.location.search)
+        let refCode = params.get('ref') || undefined
+        
+        // Check for Telegram start parameter (from t.me/bot?start=xxx links)
+        if (!refCode && tg?.initDataUnsafe?.start_param) {
+            refCode = tg.initDataUnsafe.start_param
+        }
+
         try {
-            const userData = await getOrCreateUser(userId, username)
+            const userData = await getOrCreateUser(userId, username, refCode)
             if (userData) {
                 setUser(userData)
+                await applyReferralReward(userId)
             }
         } catch (error) {
             console.error('Error:', error)
