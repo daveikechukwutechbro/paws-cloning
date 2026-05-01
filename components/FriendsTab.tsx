@@ -48,7 +48,7 @@ const FriendsTab = () => {
     const directInviteLink = useMemo(() => {
         if (!user?.id) return ''
         const encodedRef = encodeURIComponent(user.id.replace('tg_', ''))
-        return `https://t.me/YourBotUsername?start=${encodedRef}`
+        return `https://t.me/Pawscloudminebot?start=${encodedRef}`
     }, [user?.id])
 
     const handleInvite = () => {
@@ -58,7 +58,7 @@ const FriendsTab = () => {
     const shareViaTelegram = () => {
         if (!user?.id) return
         const refCode = user.id.replace('tg_', '')
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/YourBotUsername?start=${refCode}`)}&text=${encodeURIComponent('Join PAWS and earn rewards! 🐾\nUse my link to get bonus tokens!')}`
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/Pawscloudminebot?start=${refCode}`)}&text=${encodeURIComponent('Join PAWS and earn rewards! 🐾\nUse my link to get bonus tokens!')}`
         window.open(shareUrl, '_blank')
         setShowShareModal(false)
     }
@@ -66,7 +66,7 @@ const FriendsTab = () => {
     const shareViaNative = async () => {
         if (!user?.id) return
         const refCode = user.id.replace('tg_', '')
-        const link = `https://t.me/YourBotUsername?start=${refCode}`
+        const link = `https://t.me/Pawscloudminebot?start=${refCode}`
         
         try {
             if (navigator.share) {
@@ -86,7 +86,7 @@ const FriendsTab = () => {
     const copyInviteLink = async () => {
         if (!user?.id) return
         const refCode = user.id.replace('tg_', '')
-        const link = `https://t.me/YourBotUsername?start=${refCode}`
+        const link = `https://t.me/Pawscloudminebot?start=${refCode}`
         
         try {
             await navigator.clipboard.writeText(link)
@@ -100,7 +100,7 @@ const FriendsTab = () => {
     const copyLink = async () => {
         if (!user?.id) return
         const refCode = user.id.replace('tg_', '')
-        const link = `https://t.me/YourBotUsername?start=${refCode}`
+        const link = `https://t.me/Pawscloudminebot?start=${refCode}`
         
         try {
             await navigator.clipboard.writeText(link)
