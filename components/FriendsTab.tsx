@@ -2,7 +2,7 @@
 
 import { paws } from '@/images'
 import Image from 'next/image'
-import { useMemo, useState, useEffect, useCallback } from 'react'
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { REFERRAL_TIERS, REFERRAL_REWARDS, getReferralStats, getFriendsList, claimTierReward } from '@/utils/referralSystem'
 import type { ReferralFriend, ReferralTier } from '@/utils/referralSystem'
@@ -15,6 +15,8 @@ const tierColors: Record<string, string> = {
     'Master': '#ff00ff'
 }
 
+const POLL_INTERVAL_MS = 15000
+
 const FriendsTab = () => {
     const { user, refreshUser } = useUser()
     const [friendsList, setFriendsList] = useState<ReferralFriend[]>([])
@@ -25,6 +27,7 @@ const FriendsTab = () => {
     const [claimingTier, setClaimingTier] = useState<number | null>(null)
     const [showShareModal, setShowShareModal] = useState(false)
     const [copyFeedback, setCopyFeedback] = useState<{[key: string]: boolean}>({})
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     const loadReferralData = useCallback(async () => {
         if (!user?.id) return
@@ -44,15 +47,26 @@ const FriendsTab = () => {
     useEffect(() => {
         if (!user?.id) return
         loadReferralData()
-        const interval = setInterval(loadReferralData, 5000)
-        return () => clearInterval(interval)
+
+        intervalRef.current = setInterval(loadReferralData, POLL_INTERVAL_MS)
+
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current)
+        }
     }, [user?.id, loadReferralData])
 
     useEffect(() => {
         if (!user?.id) return
-        const interval = setInterval(() => refreshUser(), 8000)
-        return () => clearInterval(interval)
-    }, [user?.id, refreshUser])
+
+        const handleVisibilityChange = () => {
+            if (!document.hidden && intervalRef.current) {
+                loadReferralData()
+            }
+        }
+
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }, [user?.id, loadReferralData])
 
     const directInviteLink = useMemo(() => {
         if (!user?.id) return ''
@@ -123,7 +137,7 @@ const FriendsTab = () => {
     }
 
     const handleClaimTier = async (tierLevel: number) => {
-        if (!user?.id) return
+        if (!user?.id || claimingTier !== null) return
         setClaimingTier(tierLevel)
         try {
             const success = await claimTierReward(user.id, tierLevel)
@@ -227,7 +241,7 @@ const FriendsTab = () => {
                             <button
                                 key={tier.level}
                                 onClick={() => handleClaimTier(tier.level)}
-                                disabled={claimingTier === tier.level}
+                                disabled={claimingTier !== null}
                                 className="w-full bg-[#1f1f20] border border-[#ffd700]/30 rounded-xl p-3 flex items-center justify-between active:scale-98 transition-transform"
                             >
                                 <div className="flex items-center gap-3">

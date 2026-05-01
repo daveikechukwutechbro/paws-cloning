@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if true;
+      
+      allow create: if request.resource.data.id == userId;
+      
+      allow update: if request.resource.data.id == userId
+        && (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'balance',
+            'username',
+            'isPremium',
+            'referralRewardClaimed',
+            'referralCount',
+            'premiumReferralCount',
+            'referralEarnings',
+            'friendsList',
+            'tierLevel',
+            'tierRewardsClaimed',
+            'lastReferralAt',
+            'upgrade_taps',
+            'upgrade_energy',
+            'upgrade_timer'
+          ])
+          || request.auth != null
+        );
+      
+      allow delete: if false;
+    }
+  }
+}

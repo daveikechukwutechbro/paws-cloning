@@ -1,5 +1,5 @@
 import { db } from '@/utils/firebaseClient'
-import { doc, getDoc, setDoc, increment, collection, query, where, getDocs, updateDoc, arrayUnion, Timestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, increment, collection, query, orderBy, limit, getDocs, updateDoc, arrayUnion, Timestamp, runTransaction } from 'firebase/firestore'
 
 export interface ReferralTier {
     level: number
@@ -54,9 +54,12 @@ export interface UserReferralData {
     lastReferralAt?: Timestamp
 }
 
-async function checkAndUpdateTier(userId: string, referralCount: number): Promise<{ newTierLevel: number, bonusClaimed: boolean }> {
+async function checkAndUpdateTierInTransaction(
+    inviterRef: any,
+    referralCount: number,
+    claimedTiers: number[]
+): Promise<{ level: number; bonus: number } | null> {
     let newTierLevel = 0
-    let bonusClaimed = false
 
     for (const tier of REFERRAL_TIERS) {
         if (referralCount >= tier.requiredFriends && tier.level > newTierLevel) {
@@ -64,30 +67,12 @@ async function checkAndUpdateTier(userId: string, referralCount: number): Promis
         }
     }
 
-    if (newTierLevel > 0) {
-        const userRef = doc(db, 'users', userId)
-        const userSnap = await getDoc(userRef)
-        
-        if (userSnap.exists()) {
-            const userData = userSnap.data() as UserReferralData
-            const claimedTiers = userData.tierRewardsClaimed || []
-            
-            if (!claimedTiers.includes(newTierLevel)) {
-                const tierBonus = REFERRAL_TIERS.find(t => t.level === newTierLevel)?.bonusReward || 0
-                
-                await updateDoc(userRef, {
-                    tierLevel: newTierLevel,
-                    tierRewardsClaimed: arrayUnion(newTierLevel),
-                    balance: increment(tierBonus),
-                    referralEarnings: increment(tierBonus)
-                })
-                
-                bonusClaimed = true
-            }
-        }
+    if (newTierLevel > 0 && !claimedTiers.includes(newTierLevel)) {
+        const tierBonus = REFERRAL_TIERS.find(t => t.level === newTierLevel)?.bonusReward || 0
+        return { level: newTierLevel, bonus: tierBonus }
     }
 
-    return { newTierLevel, bonusClaimed }
+    return null
 }
 
 export async function processNewReferral(
@@ -97,34 +82,68 @@ export async function processNewReferral(
     isPremium: boolean = false
 ): Promise<void> {
     const inviterRef = doc(db, 'users', inviterId)
-    const inviterSnap = await getDoc(inviterRef)
-    
-    if (!inviterSnap.exists()) return
 
-    const baseReward = REFERRAL_REWARDS.baseReward
-    const premiumBonus = isPremium ? REFERRAL_REWARDS.premiumFriendBonus : 0
-    const totalReward = baseReward + premiumBonus
+    try {
+        await runTransaction(db, async (transaction) => {
+            const inviterSnap = await transaction.get(inviterRef)
 
-    const newFriend: ReferralFriend = {
-        id: newUserId,
-        username,
-        isPremium,
-        joinedAt: Timestamp.now(),
-        bonusEarned: totalReward,
-        tasksCompleted: 0
+            if (!inviterSnap.exists()) return
+
+            const inviterData = inviterSnap.data() as UserReferralData
+            const baseReward = REFERRAL_REWARDS.baseReward
+            const premiumBonus = isPremium ? REFERRAL_REWARDS.premiumFriendBonus : 0
+            const totalReward = baseReward + premiumBonus
+
+            const currentReferralCount = inviterData.referralCount || 0
+            const currentPremiumCount = inviterData.premiumReferralCount || 0
+            const currentEarnings = inviterData.referralEarnings || 0
+            const currentBalance = inviterData.balance || 50000
+            const currentFriendsList = inviterData.friendsList || []
+            const currentClaimedTiers = inviterData.tierRewardsClaimed || []
+
+            const newFriend: ReferralFriend = {
+                id: newUserId,
+                username,
+                isPremium,
+                joinedAt: Timestamp.now(),
+                bonusEarned: totalReward,
+                tasksCompleted: 0
+            }
+
+            const updatedFriendsList = [newFriend, ...currentFriendsList].slice(0, 100)
+
+            const newReferralCount = currentReferralCount + 1
+            const newPremiumCount = currentPremiumCount + (isPremium ? 1 : 0)
+            const newEarnings = currentEarnings + totalReward
+            const newBalance = currentBalance + totalReward
+
+            const tierUpdate = checkAndUpdateTierInTransaction(inviterRef, newReferralCount, currentClaimedTiers)
+
+            if (tierUpdate) {
+                transaction.update(inviterRef, {
+                    referralCount: newReferralCount,
+                    premiumReferralCount: newPremiumCount,
+                    referralEarnings: newEarnings,
+                    balance: newBalance + tierUpdate.bonus,
+                    friendsList: updatedFriendsList,
+                    lastReferralAt: Timestamp.now(),
+                    tierLevel: tierUpdate.level,
+                    tierRewardsClaimed: arrayUnion(tierUpdate.level)
+                })
+            } else {
+                transaction.update(inviterRef, {
+                    referralCount: newReferralCount,
+                    premiumReferralCount: newPremiumCount,
+                    referralEarnings: newEarnings,
+                    balance: newBalance,
+                    friendsList: updatedFriendsList,
+                    lastReferralAt: Timestamp.now()
+                })
+            }
+        })
+    } catch (error) {
+        console.error('Transaction failed processing referral:', error)
     }
-
-    await updateDoc(inviterRef, {
-        referralCount: increment(1),
-        premiumReferralCount: isPremium ? increment(1) : increment(0),
-        referralEarnings: increment(totalReward),
-        balance: increment(totalReward),
-        friendsList: arrayUnion(newFriend),
-        lastReferralAt: Timestamp.now()
-    })
-
-    const inviterData = (await getDoc(inviterRef)).data() as UserReferralData
-    await checkAndUpdateTier(inviterId, inviterData.referralCount)
 }
 
 export async function getReferralStats(userId: string): Promise<{
@@ -202,21 +221,34 @@ export async function claimTierReward(userId: string, tierLevel: number): Promis
     if (!tier) return false
 
     const userRef = doc(db, 'users', userId)
-    const userSnap = await getDoc(userRef)
-    
-    if (!userSnap.exists()) return false
 
-    const userData = userSnap.data() as UserReferralData
-    
-    if (userData.referralCount < tier.requiredFriends) return false
-    if ((userData.tierRewardsClaimed || []).includes(tierLevel)) return false
+    try {
+        const result = await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef)
+            
+            if (!userSnap.exists()) return false
 
-    await updateDoc(userRef, {
-        tierLevel: tierLevel,
-        tierRewardsClaimed: arrayUnion(tierLevel),
-        balance: increment(tier.bonusReward),
-        referralEarnings: increment(tier.bonusReward)
-    })
+            const userData = userSnap.data() as UserReferralData
+            
+            if (userData.referralCount < tier.requiredFriends) return false
+            if ((userData.tierRewardsClaimed || []).includes(tierLevel)) return false
 
-    return true
+            const currentBalance = userData.balance || 50000
+            const currentEarnings = userData.referralEarnings || 0
+
+            transaction.update(userRef, {
+                tierLevel: tierLevel,
+                tierRewardsClaimed: arrayUnion(tierLevel),
+                balance: currentBalance + tier.bonusReward,
+                referralEarnings: currentEarnings + tier.bonusReward
+            })
+
+            return true
+        })
+
+        return result
+    } catch (error) {
+        console.error('Transaction failed claiming tier reward:', error)
+        return false
+    }
 }

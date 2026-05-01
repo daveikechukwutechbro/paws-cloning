@@ -1,4 +1,4 @@
-import { doc, getDoc, increment, setDoc, Timestamp } from 'firebase/firestore'
+import { doc, getDoc, increment, setDoc, Timestamp, runTransaction } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
 import { processNewReferral, REFERRAL_TIERS } from '@/utils/referralSystem'
 
@@ -36,94 +36,141 @@ export async function getOrCreateUser(
     isPremium: boolean = false
 ): Promise<User | null> {
     const userRef = doc(db, 'users', userId)
-    const userSnap = await getDoc(userRef)
     
-    if (userSnap.exists()) {
-        const existingData = userSnap.data() as User
-        if (existingData.username !== username || existingData.isPremium !== isPremium) {
-            await setDoc(userRef, {
-                username,
-                isPremium,
-                id: userId
-            }, { merge: true })
-        }
-        const freshSnap = await getDoc(userRef)
-        return freshSnap.data() as User
-    } else {
-        const newUser: User = {
-            id: userId,
-            username: username,
-            balance: 50000,
-            referralCode: userId,
-            referredBy: referredBy && referredBy !== userId ? referredBy : undefined,
-            referralCount: 0,
-            premiumReferralCount: 0,
-            referralEarnings: 0,
-            tierLevel: 0,
-            tierRewardsClaimed: [],
-            friendsList: [],
-            referralRewardClaimed: false,
-            isPremium: isPremium,
-            created_at: new Date().toISOString()
-        }
-        await setDoc(userRef, newUser)
+    try {
+        const result = await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef)
+            
+            if (userSnap.exists()) {
+                const existingData = userSnap.data() as User
+                if (existingData.username !== username || existingData.isPremium !== isPremium) {
+                    transaction.update(userRef, {
+                        username,
+                        isPremium,
+                        id: userId
+                    })
+                }
+                return { created: false, data: { ...existingData, username, isPremium } }
+            } else {
+                const newUser: User = {
+                    id: userId,
+                    username: username,
+                    balance: 50000,
+                    referralCode: userId,
+                    referredBy: referredBy && referredBy !== userId ? referredBy : undefined,
+                    referralCount: 0,
+                    premiumReferralCount: 0,
+                    referralEarnings: 0,
+                    tierLevel: 0,
+                    tierRewardsClaimed: [],
+                    friendsList: [],
+                    referralRewardClaimed: false,
+                    isPremium: isPremium,
+                    created_at: new Date().toISOString()
+                }
+                transaction.set(userRef, newUser)
+                return { created: true, data: newUser }
+            }
+        })
 
-        if (referredBy && referredBy !== userId) {
+        if (result.created && referredBy && referredBy !== userId) {
             await processNewReferral(referredBy, userId, username, isPremium)
         }
         
         const freshSnap = await getDoc(userRef)
         return freshSnap.data() as User
+    } catch (error) {
+        console.error('Transaction failed creating user:', error)
+        
+        try {
+            await setDoc(userRef, {
+                id: userId,
+                username,
+                isPremium,
+                balance: 50000,
+                referralCode: userId
+            }, { merge: true })
+            
+            if (referredBy && referredBy !== userId) {
+                await processNewReferral(referredBy, userId, username, isPremium)
+            }
+            
+            const freshSnap = await getDoc(userRef)
+            return freshSnap.data() as User
+        } catch (retryError) {
+            console.error('Retry also failed:', retryError)
+            return null
+        }
     }
 }
 
 export async function applyReferralReward(userId: string): Promise<void> {
     const userRef = doc(db, 'users', userId)
-    const userSnap = await getDoc(userRef)
 
-    if (!userSnap.exists()) return
+    try {
+        await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef)
 
-    const userData = userSnap.data() as User
-    if (userData.referralRewardClaimed) return
+            if (!userSnap.exists()) return
 
-    const inviterId = userData.referredBy
-    if (!inviterId || inviterId === userId) {
-        await setDoc(userRef, { referralRewardClaimed: true }, { merge: true })
-        return
+            const userData = userSnap.data() as User
+            if (userData.referralRewardClaimed) return
+
+            const inviterId = userData.referredBy
+            if (!inviterId || inviterId === userId) {
+                transaction.update(userRef, { referralRewardClaimed: true })
+                return
+            }
+
+            const bonusForNewUser = 2000
+            const currentBalance = userData.balance || 50000
+
+            transaction.update(userRef, {
+                balance: currentBalance + bonusForNewUser,
+                referralRewardClaimed: true
+            })
+        })
+    } catch (error) {
+        console.error('Transaction failed applying referral reward:', error)
     }
-
-    const bonusForNewUser = 2000
-
-    await setDoc(
-        userRef,
-        {
-            balance: increment(bonusForNewUser),
-            referralRewardClaimed: true,
-            id: userId
-        },
-        { merge: true }
-    )
 }
 
 export async function updateUserBalance(userId: string, balance: number): Promise<void> {
     const userRef = doc(db, 'users', userId)
-    const userSnap = await getDoc(userRef)
-    const currentData = userSnap.data() || {}
-    
-    await setDoc(userRef, {
-        ...currentData,
-        balance: balance,
-        id: userId
-    }, { merge: true })
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef)
+            
+            if (!userSnap.exists()) {
+                transaction.set(userRef, {
+                    id: userId,
+                    balance,
+                    username: 'User',
+                    referralCode: userId,
+                    referralCount: 0,
+                    premiumReferralCount: 0,
+                    referralEarnings: 0,
+                    tierLevel: 0,
+                    tierRewardsClaimed: [],
+                    friendsList: [],
+                    referralRewardClaimed: false,
+                    isPremium: false
+                })
+                return
+            }
+
+            transaction.update(userRef, { balance })
+        })
+    } catch (error) {
+        console.error('Transaction failed updating balance:', error)
+    }
 }
 
 export async function updateUserUpgrade(userId: string, upgradeType: string, level: number): Promise<void> {
     const userRef = doc(db, 'users', userId)
-    const userSnap = await getDoc(userRef)
-    const currentData = userSnap.data() || {}
     
     await setDoc(userRef, {
-        ...currentData,
         [`upgrade_${upgradeType}`]: level,
         id: userId
     }, { merge: true })
