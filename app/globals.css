@@ -95,5 +95,17 @@ body {
       rgba(0, 122, 255, 0.3) 50%,
       transparent 100%);
   animation: shine 7s infinite;
-  /* Total animation time: 7s (6s wait + 1s animation) */
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
 }

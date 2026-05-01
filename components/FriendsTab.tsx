@@ -7,21 +7,6 @@ import { useUser } from '@/contexts/UserContext'
 import { REFERRAL_TIERS, REFERRAL_REWARDS, getReferralStats, getFriendsList, claimTierReward } from '@/utils/referralSystem'
 import type { ReferralFriend, ReferralTier } from '@/utils/referralSystem'
 
-interface TelegramWebApp {
-    initDataUnsafe: {
-        user?: {
-            id?: number
-            username?: string
-            first_name?: string
-        }
-        chat?: {
-            username?: string
-        }
-        start_param?: string
-    }
-    shareToStory?: (url: string, options?: { text?: string }) => void
-}
-
 const tierColors: Record<string, string> = {
     'Bronze': '#cd7f32',
     'Silver': '#c0c0c0',
@@ -58,66 +43,71 @@ const FriendsTab = () => {
         loadReferralData()
     }, [loadReferralData])
 
-    const inviteLink = useMemo(() => {
-        if (typeof window === 'undefined' || !user?.id) return ''
-        
-        const tg = (window as { Telegram?: { WebApp: TelegramWebApp } }).Telegram?.WebApp
-        const botUsername = tg?.initDataUnsafe?.chat?.username || tg?.initDataUnsafe?.user?.username
-        
-        if (botUsername) {
-            return `https://t.me/${botUsername}?start=${encodeURIComponent(user.id)}`
-        }
-        
-        return `${window.location.origin}/?ref=${encodeURIComponent(user.id)}`
+    const [showShareModal, setShowShareModal] = useState(false)
+
+    const directInviteLink = useMemo(() => {
+        if (!user?.id) return ''
+        const encodedRef = encodeURIComponent(user.id.replace('tg_', ''))
+        return `https://t.me/YourBotUsername?start=${encodedRef}`
     }, [user?.id])
 
-    const handleInvite = async () => {
-        if (!inviteLink) {
-            alert('Invite link is not ready yet. Please try again.')
-            return
-        }
+    const handleInvite = () => {
+        setShowShareModal(true)
+    }
 
-        const tg = (window as { Telegram?: { WebApp: TelegramWebApp } }).Telegram?.WebApp
+    const shareViaTelegram = () => {
+        if (!user?.id) return
+        const refCode = user.id.replace('tg_', '')
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/YourBotUsername?start=${refCode}`)}&text=${encodeURIComponent('Join PAWS and earn rewards! 🐾\nUse my link to get bonus tokens!')}`
+        window.open(shareUrl, '_blank')
+        setShowShareModal(false)
+    }
+
+    const shareViaNative = async () => {
+        if (!user?.id) return
+        const refCode = user.id.replace('tg_', '')
+        const link = `https://t.me/YourBotUsername?start=${refCode}`
         
         try {
-            if (tg && tg.shareToStory) {
-                tg.shareToStory(inviteLink, {
-                    text: `Join PAWS and earn rewards! Use my invite link.`
-                })
-                return
-            }
-
             if (navigator.share) {
                 await navigator.share({
                     title: 'Join PAWS',
-                    text: 'Join PAWS and earn crypto rewards!',
-                    url: inviteLink
+                    text: 'Join PAWS and earn rewards! 🐾',
+                    url: link
                 })
-                return
+                setShowShareModal(false)
             }
-
-            await navigator.clipboard.writeText(inviteLink)
-            showCopyFeedback('invite-btn')
-        } catch (error: unknown) {
+        } catch (error) {
             if (error instanceof Error && error.name === 'AbortError') return
-            
-            try {
-                await navigator.clipboard.writeText(inviteLink)
-                showCopyFeedback('invite-btn')
-            } catch {
-                alert('Could not share invite link.')
-            }
+            await copyInviteLink()
+        }
+    }
+
+    const copyInviteLink = async () => {
+        if (!user?.id) return
+        const refCode = user.id.replace('tg_', '')
+        const link = `https://t.me/YourBotUsername?start=${refCode}`
+        
+        try {
+            await navigator.clipboard.writeText(link)
+            setShowShareModal(false)
+            showCopyFeedback('invite-btn')
+        } catch {
+            alert('Failed to copy link')
         }
     }
 
     const copyLink = async () => {
-        if (!inviteLink) return
+        if (!user?.id) return
+        const refCode = user.id.replace('tg_', '')
+        const link = `https://t.me/YourBotUsername?start=${refCode}`
+        
         try {
-            await navigator.clipboard.writeText(inviteLink)
+            await navigator.clipboard.writeText(link)
             showCopyFeedback('copy-btn')
-            } catch {
-                alert('Failed to copy link')
-            }
+        } catch {
+            alert('Failed to copy link')
+        }
     }
 
     const showCopyFeedback = (btnId: string) => {
@@ -328,17 +318,68 @@ const FriendsTab = () => {
             <div className="mt-4 bg-[#151516] border border-[#2d2d2e] rounded-xl p-4">
                 <div className="text-sm text-[#8e8e93] mb-2">Your invite link</div>
                 <div className="text-xs break-all bg-[#1f1f20] p-3 rounded-lg text-white font-mono">
-                    {inviteLink || 'Generating...'}
+                    {directInviteLink || 'Generating...'}
                 </div>
                 <button
                     id="copy-btn"
                     onClick={copyLink}
-                    disabled={!inviteLink}
+                    disabled={!directInviteLink}
                     className="mt-3 w-full bg-[#2d2d2e] text-white py-3 rounded-xl disabled:opacity-50 active:scale-98 transition-transform"
                 >
                     Copy Link
                 </button>
             </div>
+
+            {showShareModal && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => setShowShareModal(false)}>
+                    <div className="w-full max-w-md bg-[#1c1c1e] rounded-t-3xl p-6 animate-slide-up" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold">Share Invite Link</h3>
+                            <button onClick={() => setShowShareModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#2d2d2e]">✕</button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <button
+                                onClick={shareViaTelegram}
+                                className="w-full flex items-center gap-4 bg-[#2d89ef] text-white p-4 rounded-xl active:scale-98 transition-transform"
+                            >
+                                <div className="text-2xl">📨</div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Share via Telegram</div>
+                                    <div className="text-xs opacity-80">Send to friends or groups</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={shareViaNative}
+                                className="w-full flex items-center gap-4 bg-[#2d2d2e] text-white p-4 rounded-xl active:scale-98 transition-transform"
+                            >
+                                <div className="text-2xl">📤</div>
+                                <div className="text-left">
+                                    <div className="font-semibold">More Options</div>
+                                    <div className="text-xs text-gray-400">Share to other apps</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={copyInviteLink}
+                                className="w-full flex items-center gap-4 bg-[#2d2d2e] text-white p-4 rounded-xl active:scale-98 transition-transform"
+                            >
+                                <div className="text-2xl">📋</div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Copy Link</div>
+                                    <div className="text-xs text-gray-400">Copy to clipboard</div>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div className="mt-6 bg-[#1f1f20] p-3 rounded-lg">
+                            <div className="text-xs text-[#8e8e93] mb-1">Your unique link:</div>
+                            <div className="text-xs break-all text-white font-mono">{directInviteLink}</div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="fixed bottom-[80px] left-0 right-0 py-4 flex justify-center bg-gradient-to-t from-black via-black to-transparent">
                 <div className="w-full max-w-md px-4">
