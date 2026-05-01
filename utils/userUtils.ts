@@ -1,5 +1,15 @@
-import { doc, getDoc, increment, setDoc } from 'firebase/firestore'
+import { doc, getDoc, increment, setDoc, Timestamp } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
+import { processNewReferral, REFERRAL_TIERS } from '@/utils/referralSystem'
+
+export interface ReferralFriend {
+    id: string
+    username: string
+    isPremium: boolean
+    joinedAt: Timestamp
+    bonusEarned: number
+    tasksCompleted: number
+}
 
 export interface User {
     id: string
@@ -8,15 +18,22 @@ export interface User {
     referralCode?: string
     referredBy?: string
     referralCount?: number
+    premiumReferralCount?: number
     referralEarnings?: number
+    tierLevel?: number
+    tierRewardsClaimed?: number[]
+    friendsList?: ReferralFriend[]
     referralRewardClaimed?: boolean
+    lastReferralAt?: Timestamp
+    isPremium?: boolean
     created_at?: string
 }
 
 export async function getOrCreateUser(
     userId: string,
     username: string,
-    referredBy?: string
+    referredBy?: string,
+    isPremium: boolean = false
 ): Promise<User | null> {
     const userRef = doc(db, 'users', userId)
     const userSnap = await getDoc(userRef)
@@ -31,10 +48,20 @@ export async function getOrCreateUser(
             referralCode: userId,
             referredBy: referredBy && referredBy !== userId ? referredBy : undefined,
             referralCount: 0,
+            premiumReferralCount: 0,
             referralEarnings: 0,
-            referralRewardClaimed: false
+            tierLevel: 0,
+            tierRewardsClaimed: [],
+            friendsList: [],
+            referralRewardClaimed: false,
+            isPremium: isPremium
         }
         await setDoc(userRef, newUser)
+
+        if (referredBy && referredBy !== userId) {
+            await processNewReferral(referredBy, userId, username, isPremium)
+        }
+        
         return newUser
     }
 }

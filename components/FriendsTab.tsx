@@ -1,18 +1,11 @@
-// components/FriendsTab.tsx
-
-/**
- * This project was developed by Nikandr Surkov.
- * 
- * YouTube: https://www.youtube.com/@NikandrSurkov
- * GitHub: https://github.com/nikandr-surkov
- */
-
 'use client'
 
 import { paws } from '@/images'
 import Image from 'next/image'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { useUser } from '@/contexts/UserContext'
+import { REFERRAL_TIERS, REFERRAL_REWARDS, getReferralStats, getFriendsList, claimTierReward } from '@/utils/referralSystem'
+import type { ReferralFriend, ReferralTier } from '@/utils/referralSystem'
 
 interface TelegramWebApp {
     initDataUnsafe: {
@@ -29,8 +22,41 @@ interface TelegramWebApp {
     shareToStory?: (url: string, options?: { text?: string }) => void
 }
 
+const tierColors: Record<string, string> = {
+    'Bronze': '#cd7f32',
+    'Silver': '#c0c0c0',
+    'Gold': '#ffd700',
+    'Diamond': '#b9f2ff',
+    'Master': '#ff00ff'
+}
+
 const FriendsTab = () => {
-    const { user } = useUser()
+    const { user, refreshUser } = useUser()
+    const [friendsList, setFriendsList] = useState<ReferralFriend[]>([])
+    const [currentTier, setCurrentTier] = useState<ReferralTier | null>(null)
+    const [nextTier, setNextTier] = useState<ReferralTier | null>(null)
+    const [progress, setProgress] = useState(0)
+    const [showFriendsList, setShowFriendsList] = useState(false)
+    const [claimingTier, setClaimingTier] = useState<number | null>(null)
+
+    const loadReferralData = useCallback(async () => {
+        if (!user?.id) return
+        try {
+            const stats = await getReferralStats(user.id)
+            setCurrentTier(stats.currentTier)
+            setNextTier(stats.nextTier)
+            setProgress(stats.progressToNextTier)
+
+            const friends = await getFriendsList(user.id)
+            setFriendsList(friends.sort((a, b) => b.joinedAt.toMillis() - a.joinedAt.toMillis()))
+        } catch (error) {
+            console.error('Error loading referral data:', error)
+        }
+    }, [user?.id])
+
+    useEffect(() => {
+        loadReferralData()
+    }, [loadReferralData])
 
     const inviteLink = useMemo(() => {
         if (typeof window === 'undefined' || !user?.id) return ''
@@ -38,12 +64,10 @@ const FriendsTab = () => {
         const tg = (window as { Telegram?: { WebApp: TelegramWebApp } }).Telegram?.WebApp
         const botUsername = tg?.initDataUnsafe?.chat?.username || tg?.initDataUnsafe?.user?.username
         
-        // For Telegram Mini Apps, use the bot URL with start parameter
         if (botUsername) {
             return `https://t.me/${botUsername}?start=${encodeURIComponent(user.id)}`
         }
         
-        // Fallback to web URL
         return `${window.location.origin}/?ref=${encodeURIComponent(user.id)}`
     }, [user?.id])
 
@@ -56,51 +80,33 @@ const FriendsTab = () => {
         const tg = (window as { Telegram?: { WebApp: TelegramWebApp } }).Telegram?.WebApp
         
         try {
-            // Try Telegram's native sharing first
             if (tg && tg.shareToStory) {
                 tg.shareToStory(inviteLink, {
-                    text: 'Join PAWS with my invite link and earn rewards!'
+                    text: `Join PAWS and earn rewards! Use my invite link.`
                 })
                 return
             }
 
-            // Try Web Share API
             if (navigator.share) {
                 await navigator.share({
                     title: 'Join PAWS',
-                    text: 'Join PAWS with my invite link and earn rewards!',
+                    text: 'Join PAWS and earn crypto rewards!',
                     url: inviteLink
                 })
                 return
             }
 
-            // Fallback to copy
             await navigator.clipboard.writeText(inviteLink)
-            showCopyFeedback()
+            showCopyFeedback('invite-btn')
         } catch (error: unknown) {
-            // User cancelled share
             if (error instanceof Error && error.name === 'AbortError') return
             
-            console.error('Invite error:', error)
-            // Try clipboard as last resort
             try {
                 await navigator.clipboard.writeText(inviteLink)
-                showCopyFeedback()
+                showCopyFeedback('invite-btn')
             } catch {
-                alert('Could not share invite link. Please copy it manually.')
+                alert('Could not share invite link.')
             }
-        }
-    }
-
-    const showCopyFeedback = () => {
-        const btn = document.getElementById('invite-btn')
-        if (btn) {
-            btn.textContent = 'Copied!'
-            btn.classList.add('bg-green-600')
-            setTimeout(() => {
-                btn.textContent = 'Invite'
-                btn.classList.remove('bg-green-600')
-            }, 2000)
         }
     }
 
@@ -108,90 +114,240 @@ const FriendsTab = () => {
         if (!inviteLink) return
         try {
             await navigator.clipboard.writeText(inviteLink)
-            const btn = document.getElementById('copy-btn')
-            if (btn) {
-                btn.textContent = 'Copied!'
-                setTimeout(() => {
-                    btn.textContent = 'Copy Link'
-                }, 2000)
+            showCopyFeedback('copy-btn')
+            } catch {
+                alert('Failed to copy link')
             }
-        } catch (error) {
-            console.error('Copy error:', error)
-            alert('Failed to copy link')
+    }
+
+    const showCopyFeedback = (btnId: string) => {
+        const btn = document.getElementById(btnId)
+        if (btn) {
+            const originalText = btn.textContent
+            btn.textContent = 'Copied!'
+            btn.classList.add('bg-green-600')
+            setTimeout(() => {
+                btn.textContent = originalText
+                btn.classList.remove('bg-green-600')
+            }, 2000)
         }
     }
 
+    const handleClaimTier = async (tierLevel: number) => {
+        if (!user?.id) return
+        setClaimingTier(tierLevel)
+        try {
+            const success = await claimTierReward(user.id, tierLevel)
+            if (success) {
+                await refreshUser()
+                await loadReferralData()
+            }
+        } catch (error) {
+            console.error('Error claiming tier reward:', error)
+        } finally {
+            setClaimingTier(null)
+        }
+    }
+
+    const availableTiers = REFERRAL_TIERS.filter(tier => {
+        const refCount = user?.referralCount || 0
+        const claimed = user?.tierRewardsClaimed || []
+        return refCount >= tier.requiredFriends && !claimed.includes(tier.level)
+    })
+
+    const formatTimeAgo = (timestamp: { toDate?: () => Date } | Date | number) => {
+        if (!timestamp) return ''
+        const now = new Date()
+        const then = (timestamp as { toDate?: () => Date }).toDate 
+            ? (timestamp as { toDate: () => Date }).toDate() 
+            : new Date(timestamp as Date | number)
+        const diffMs = now.getTime() - then.getTime()
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+        
+        if (diffHours < 1) return 'Just now'
+        if (diffHours < 24) return `${diffHours}h ago`
+        return `${diffDays}d ago`
+    }
+
     return (
-        <div className={`friends-tab-con px-4 pb-24 transition-all duration-300`}>
-            {/* Header Text */}
-            <div className="pt-8 space-y-1">
-                <h1 className="text-3xl font-bold">INVITE FRIENDS</h1>
-                <div className="text-xl">
-                    <span className="font-semibold">SHARE</span>
-                    <span className="ml-2 text-gray-500">YOUR INVITATION</span>
+        <div className="friends-tab-con px-4 pb-32 transition-all duration-300">
+            <div className="pt-8">
+                <h1 className="text-3xl font-bold mb-1">INVITE FRIENDS</h1>
+                <p className="text-gray-400 text-lg">Get bonus for each friend</p>
+            </div>
+
+            <div className="mt-6 bg-gradient-to-br from-[#1a1a2e] to-[#151516] border border-[#2d2d2e] rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <div className="text-sm text-[#8e8e93]">Your reward</div>
+                        <div className="text-2xl font-bold text-white">{REFERRAL_REWARDS.baseReward.toLocaleString()} PAWS</div>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${currentTier ? 'text-black' : 'text-gray-400'}`}
+                        style={{ backgroundColor: currentTier ? (tierColors[currentTier.label] || '#4c9ce2') : '#2d2d2e' }}>
+                        {currentTier?.label || 'No Tier'}
+                    </div>
                 </div>
-                <div className="text-xl">
-                    <span className="text-gray-500">LINK &</span>
-                    <span className="ml-2 font-semibold">GET 10%</span>
-                    <span className="ml-2 text-gray-500">OF</span>
-                </div>
-                <div className="text-gray-500 text-xl">
-                    FRIEND&apos;S POINTS
+
+                {nextTier && (
+                    <div className="mb-2">
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>{user?.referralCount || 0} / {nextTier.requiredFriends} friends</span>
+                            <span>Next: {nextTier.label}</span>
+                        </div>
+                        <div className="w-full bg-[#2d2d2e] rounded-full h-2">
+                            <div 
+                                className="h-2 rounded-full transition-all duration-500"
+                                style={{ 
+                                    width: `${progress}%`,
+                                    backgroundColor: tierColors[nextTier.label] || '#4c9ce2'
+                                }}
+                            />
+                        </div>
+                        <div className="text-xs text-[#8e8e93] mt-1">
+                            +{nextTier.bonusReward.toLocaleString()} PAWS bonus
+                        </div>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-[#1f1f20] p-3 rounded-xl">
+                        <div className="text-xs text-[#8e8e93]">Friends</div>
+                        <div className="text-xl font-bold">{user?.referralCount || 0}</div>
+                    </div>
+                    <div className="bg-[#1f1f20] p-3 rounded-xl">
+                        <div className="text-xs text-[#8e8e93]">Premium</div>
+                        <div className="text-xl font-bold text-[#b9f2ff]">{user?.premiumReferralCount || 0}</div>
+                    </div>
+                    <div className="bg-[#1f1f20] p-3 rounded-xl col-span-2">
+                        <div className="text-xs text-[#8e8e93]">Total Earnings</div>
+                        <div className="text-xl font-bold text-[#4c9ce2]">{(user?.referralEarnings || 0).toLocaleString()} PAWS</div>
+                    </div>
                 </div>
             </div>
 
-            <div className="mt-4 bg-[#151516] border border-[#2d2d2e] rounded-xl p-3">
+            {availableTiers.length > 0 && (
+                <div className="mt-4">
+                    <div className="text-sm font-semibold mb-2 text-[#ffd700]">Claimable Rewards</div>
+                    <div className="space-y-2">
+                        {availableTiers.map(tier => (
+                            <button
+                                key={tier.level}
+                                onClick={() => handleClaimTier(tier.level)}
+                                disabled={claimingTier === tier.level}
+                                className="w-full bg-[#1f1f20] border border-[#ffd700]/30 rounded-xl p-3 flex items-center justify-between active:scale-98 transition-transform"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div 
+                                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-black"
+                                        style={{ backgroundColor: tierColors[tier.label] }}
+                                    >
+                                        {tier.level}
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-semibold">{tier.label}</div>
+                                        <div className="text-xs text-[#8e8e93]">{tier.requiredFriends} friends</div>
+                                    </div>
+                                </div>
+                                <div className="text-[#ffd700] font-bold">
+                                    +{tier.bonusReward.toLocaleString()}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="mt-4 bg-[#151516] border border-[#2d2d2e] rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-semibold">Special Bonuses</div>
+                </div>
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between bg-[#1f1f20] p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">⭐</span>
+                            <div>
+                                <div className="text-sm font-medium">Premium Friend</div>
+                                <div className="text-xs text-[#8e8e93]">Extra bonus for Telegram Premium</div>
+                            </div>
+                        </div>
+                        <div className="text-[#b9f2ff] font-bold">+{REFERRAL_REWARDS.premiumFriendBonus.toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-4">
+                <button
+                    onClick={() => setShowFriendsList(!showFriendsList)}
+                    className="w-full bg-[#151516] border border-[#2d2d2e] rounded-xl p-4 flex items-center justify-between"
+                >
+                    <div className="text-left">
+                        <div className="text-sm font-semibold">Your Friends</div>
+                        <div className="text-xs text-[#8e8e93]">{friendsList.length} friends joined</div>
+                    </div>
+                    <div className={`transform transition-transform ${showFriendsList ? 'rotate-180' : ''}`}>
+                        ▼
+                    </div>
+                </button>
+
+                {showFriendsList && (
+                    <div className="mt-2 space-y-2">
+                        {friendsList.length > 0 ? (
+                            friendsList.map(friend => (
+                                <div key={friend.id} className="bg-[#1f1f20] rounded-xl p-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-[#2d2d2e] rounded-full flex items-center justify-center text-lg">
+                                            {friend.isPremium ? '⭐' : '👤'}
+                                        </div>
+                                        <div>
+                                            <div className="font-medium text-sm">{friend.username}</div>
+                                            <div className="text-xs text-[#8e8e93]">{formatTimeAgo(friend.joinedAt)}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-[#4c9ce2]">
+                                        +{friend.bonusEarned.toLocaleString()}
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="bg-[#1f1f20] rounded-xl p-8 text-center">
+                                <Image
+                                    src={paws}
+                                    alt="Paws"
+                                    width={80}
+                                    height={60}
+                                    className="mx-auto mb-3 opacity-50"
+                                />
+                                <p className="text-[#8e8e93] text-sm">No friends yet. Invite someone!</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="mt-4 bg-[#151516] border border-[#2d2d2e] rounded-xl p-4">
                 <div className="text-sm text-[#8e8e93] mb-2">Your invite link</div>
-                <div className="text-xs break-all bg-[#1f1f20] p-2 rounded text-white">
-                    {inviteLink || 'Generating invite link...'}
+                <div className="text-xs break-all bg-[#1f1f20] p-3 rounded-lg text-white font-mono">
+                    {inviteLink || 'Generating...'}
                 </div>
                 <button
                     id="copy-btn"
                     onClick={copyLink}
                     disabled={!inviteLink}
-                    className="mt-3 w-full bg-[#2d2d2e] text-white py-2 rounded-lg disabled:opacity-50 transition-colors duration-200"
+                    className="mt-3 w-full bg-[#2d2d2e] text-white py-3 rounded-xl disabled:opacity-50 active:scale-98 transition-transform"
                 >
                     Copy Link
                 </button>
-
-                <div className="grid grid-cols-2 gap-2 mt-3 text-center text-sm">
-                    <div className="bg-[#1f1f20] p-2 rounded">
-                        <div className="text-[#8e8e93]">Invites</div>
-                        <div className="font-semibold">{user?.referralCount || 0}</div>
-                    </div>
-                    <div className="bg-[#1f1f20] p-2 rounded">
-                        <div className="text-[#8e8e93]">Earned</div>
-                        <div className="font-semibold">{(user?.referralEarnings || 0).toLocaleString()} PAWS</div>
-                    </div>
-                </div>
             </div>
 
-            {/* Empty State */}
-            <div className="mt-8 mb-2">
-                <div className="bg-[#151516] w-full rounded-2xl p-8 flex flex-col items-center">
-                    <Image
-                        src={paws}
-                        alt="Paws"
-                        width={171}
-                        height={132}
-                        className="mb-4"
-                    />
-                    <p className="text-xl text-[#8e8e93] text-center">
-                        There is nothing else.<br />
-                        Invite to get more rewards.
-                    </p>
-                </div>
-            </div>
-
-            {/* Fixed Invite Button */}
-            <div className="fixed bottom-[80px] left-0 right-0 py-4 flex justify-center">
+            <div className="fixed bottom-[80px] left-0 right-0 py-4 flex justify-center bg-gradient-to-t from-black via-black to-transparent">
                 <div className="w-full max-w-md px-4">
                     <button
                         id="invite-btn"
                         onClick={handleInvite}
-                        className="w-full bg-[#4c9ce2] text-white py-4 rounded-xl text-lg font-medium transition-colors duration-200"
+                        className="w-full bg-[#4c9ce2] text-white py-4 rounded-xl text-lg font-bold active:scale-98 transition-transform shadow-lg shadow-[#4c9ce2]/20"
                     >
-                        Invite
+                        Invite a Friend
                     </button>
                 </div>
             </div>

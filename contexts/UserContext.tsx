@@ -16,17 +16,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const refreshUser = async () => {
         let userId = ''
         let username = ''
+        let isPremium = false
         
-        // Check for Telegram WebApp - use the exact user ID from Telegram
         const tg = (window as any).Telegram?.WebApp
         const tgUser = tg?.initDataUnsafe?.user
         
         if (tgUser?.id) {
-            // Use Telegram user ID directly - this is unique per account
             userId = 'tg_' + tgUser.id.toString()
             username = tgUser.first_name || tgUser.username || 'Telegram User'
+            isPremium = tgUser.is_premium || false
         } else {
-            // Fallback - create unique ID per session
             let storedId = localStorage.getItem('paws_user_id')
             if (!storedId) {
                 storedId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
@@ -36,17 +35,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
             username = 'User' + userId.slice(-4)
         }
 
-        // Get ref code from URL or Telegram start_param
         const params = new URLSearchParams(window.location.search)
         let refCode = params.get('ref') || undefined
         
-        // Check for Telegram start parameter (from t.me/bot?start=xxx links)
         if (!refCode && tg?.initDataUnsafe?.start_param) {
             refCode = tg.initDataUnsafe.start_param
         }
 
         try {
-            const userData = await getOrCreateUser(userId, username, refCode)
+            const userData = await getOrCreateUser(userId, username, refCode, isPremium)
             if (userData) {
                 setUser(userData)
                 await applyReferralReward(userId)
