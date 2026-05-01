@@ -15,15 +15,18 @@ type LeaderboardItem = {
 
 const LeaderboardTab = () => {
     const { user, loading } = useUser()
-    const [userRank, setUserRank] = useState('--')
+    const [userRank, setUserRank] = useState<string>('#--')
 
     useEffect(() => {
-        if (user && user.balance > 0) {
+        if (user && user.balance) {
             const totalUsers = 23253686
             const estimatedRank = Math.floor(totalUsers * (1 - (user.balance / 100000000)))
-            setUserRank(Math.max(1, estimatedRank).toLocaleString())
+            const rank = Math.max(1, estimatedRank).toLocaleString()
+            setUserRank(`#${rank}`)
+        } else if (!loading) {
+            setUserRank('#--')
         }
-    }, [user])
+    }, [user, loading])
 
     const leaderboardData: LeaderboardItem[] = [
         { wallet: "Pishnahad_Sup", balance: "53,137,490", place: "🥇" },
@@ -62,10 +65,10 @@ const LeaderboardTab = () => {
                             </div>
                             <div className="text-black font-medium">
                                 <div className="text-base">{loading ? 'Loading...' : (user?.username || 'You')}</div>
-                                <div className="text-xs">{loading ? '--' : (user?.balance || 0).toLocaleString()} PAWS</div>
+                                <div className="text-xs">{loading ? '--' : (user?.balance || 50000).toLocaleString()} PAWS</div>
                             </div>
                         </div>
-                        <div className="text-black">#{userRank}</div>
+                        <div className="text-black">{userRank}</div>
                     </div>
                 </div>
 

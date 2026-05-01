@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { applyReferralReward, getOrCreateUser, User } from '@/utils/userUtils'
 
 type UserContextType = {
@@ -9,55 +9,99 @@ type UserContextType = {
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
+function getFallbackUser(): { userId: string; username: string; isPremium: boolean } {
+    const tg = (window as any).Telegram?.WebApp
+    const tgUser = tg?.initDataUnsafe?.user
+    
+    if (tgUser?.id) {
+        return {
+            userId: 'tg_' + tgUser.id.toString(),
+            username: tgUser.first_name || tgUser.username || 'Telegram User',
+            isPremium: tgUser.is_premium || false
+        }
+    }
+    
+    let storedId = localStorage.getItem('paws_user_id')
+    if (!storedId) {
+        storedId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+        localStorage.setItem('paws_user_id', storedId)
+    }
+    return {
+        userId: storedId,
+        username: 'User' + storedId.slice(-4),
+        isPremium: false
+    }
+}
+
+function getReferralCode(): string | undefined {
+    const tg = (window as any).Telegram?.WebApp
+    const params = new URLSearchParams(window.location.search)
+    let refCode = params.get('ref') || undefined
+    
+    if (!refCode && tg?.initDataUnsafe?.start_param) {
+        refCode = tg.initDataUnsafe.start_param
+    }
+    return refCode
+}
+
 export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
 
-    const refreshUser = async () => {
-        let userId = ''
-        let username = ''
-        let isPremium = false
-        
-        const tg = (window as any).Telegram?.WebApp
-        const tgUser = tg?.initDataUnsafe?.user
-        
-        if (tgUser?.id) {
-            userId = 'tg_' + tgUser.id.toString()
-            username = tgUser.first_name || tgUser.username || 'Telegram User'
-            isPremium = tgUser.is_premium || false
-        } else {
-            let storedId = localStorage.getItem('paws_user_id')
-            if (!storedId) {
-                storedId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-                localStorage.setItem('paws_user_id', storedId)
-            }
-            userId = storedId
-            username = 'User' + userId.slice(-4)
-        }
-
-        const params = new URLSearchParams(window.location.search)
-        let refCode = params.get('ref') || undefined
-        
-        if (!refCode && tg?.initDataUnsafe?.start_param) {
-            refCode = tg.initDataUnsafe.start_param
-        }
+    const loadUser = useCallback(async () => {
+        const { userId, username, isPremium } = getFallbackUser()
+        const refCode = getReferralCode()
 
         try {
             const userData = await getOrCreateUser(userId, username, refCode, isPremium)
             if (userData) {
                 setUser(userData)
                 applyReferralReward(userId).catch(() => {})
+            } else {
+                setUser({
+                    id: userId,
+                    username,
+                    balance: 50000,
+                    referralCode: userId,
+                    referralCount: 0,
+                    premiumReferralCount: 0,
+                    referralEarnings: 0,
+                    tierLevel: 0,
+                    tierRewardsClaimed: [],
+                    friendsList: [],
+                    referralRewardClaimed: false,
+                    isPremium
+                })
             }
         } catch (error) {
-            console.error('Error:', error)
+            console.error('Error loading user:', error)
+            setUser({
+                id: userId,
+                username,
+                balance: 50000,
+                referralCode: userId,
+                referralCount: 0,
+                premiumReferralCount: 0,
+                referralEarnings: 0,
+                tierLevel: 0,
+                tierRewardsClaimed: [],
+                friendsList: [],
+                referralRewardClaimed: false,
+                isPremium
+            })
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
+
+    const refreshUser = useCallback(async () => {
+        setLoading(true)
+        await loadUser()
+    }, [loadUser])
 
     useEffect(() => {
-        refreshUser()
-    }, [])
+        loadUser()
+    }, [loadUser])
 
     return (
         <UserContext.Provider value={{ user, loading, refreshUser }}>
