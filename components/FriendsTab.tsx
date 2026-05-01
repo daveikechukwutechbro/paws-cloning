@@ -42,7 +42,10 @@ const FriendsTab = () => {
     }, [user?.id])
 
     useEffect(() => {
-        loadReferralData()
+        const timer = setTimeout(() => {
+            loadReferralData()
+        }, 500)
+        return () => clearTimeout(timer)
     }, [loadReferralData])
 
     const directInviteLink = useMemo(() => {
@@ -150,7 +153,9 @@ const FriendsTab = () => {
         return `${diffDays}d ago`
     }
 
-    const isLoading = !user?.id
+    const refCount = user?.referralCount || 0
+    const premiumCount = user?.premiumReferralCount || 0
+    const earnings = user?.referralEarnings || 0
 
     return (
         <div className="friends-tab-con px-4 pb-32 transition-all duration-300">
@@ -159,241 +164,235 @@ const FriendsTab = () => {
                 <p className="text-gray-400 text-lg">Get bonus for each friend</p>
             </div>
 
-            {isLoading ? (
-                <div className="mt-6 text-center py-8 text-gray-400">Loading...</div>
-            ) : (
-                <>
-                    <div className="mt-6 bg-gradient-to-br from-[#1a1a2e] to-[#151516] border border-[#2d2d2e] rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <div>
-                                <div className="text-sm text-[#8e8e93]">Your reward</div>
-                                <div className="text-2xl font-bold text-white">{REFERRAL_REWARDS.baseReward.toLocaleString()} PAWS</div>
-                            </div>
-                            <div className={`px-3 py-1 rounded-full text-sm font-bold ${currentTier ? 'text-black' : 'text-gray-400'}`}
-                                style={{ backgroundColor: currentTier ? (tierColors[currentTier.label] || '#4c9ce2') : '#2d2d2e' }}>
-                                {currentTier?.label || 'No Tier'}
-                            </div>
+            <div className="mt-6 bg-gradient-to-br from-[#1a1a2e] to-[#151516] border border-[#2d2d2e] rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <div className="text-sm text-[#8e8e93]">Your reward</div>
+                        <div className="text-2xl font-bold text-white">{REFERRAL_REWARDS.baseReward.toLocaleString()} PAWS</div>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${currentTier ? 'text-black' : 'text-gray-400'}`}
+                        style={{ backgroundColor: currentTier ? (tierColors[currentTier.label] || '#4c9ce2') : '#2d2d2e' }}>
+                        {currentTier?.label || 'No Tier'}
+                    </div>
+                </div>
+
+                {nextTier && (
+                    <div className="mb-2">
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>{refCount} / {nextTier.requiredFriends} friends</span>
+                            <span>Next: {nextTier.label}</span>
                         </div>
-
-                        {nextTier && (
-                            <div className="mb-2">
-                                <div className="flex justify-between text-xs text-gray-400 mb-1">
-                                    <span>{user?.referralCount || 0} / {nextTier.requiredFriends} friends</span>
-                                    <span>Next: {nextTier.label}</span>
-                                </div>
-                                <div className="w-full bg-[#2d2d2e] rounded-full h-2">
-                                    <div 
-                                        className="h-2 rounded-full transition-all duration-500"
-                                        style={{ 
-                                            width: `${progress}%`,
-                                            backgroundColor: tierColors[nextTier.label] || '#4c9ce2'
-                                        }}
-                                    />
-                                </div>
-                                <div className="text-xs text-[#8e8e93] mt-1">
-                                    +{nextTier.bonusReward.toLocaleString()} PAWS bonus
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-3 mt-4">
-                            <div className="bg-[#1f1f20] p-3 rounded-xl">
-                                <div className="text-xs text-[#8e8e93]">Friends</div>
-                                <div className="text-xl font-bold">{user?.referralCount || 0}</div>
-                            </div>
-                            <div className="bg-[#1f1f20] p-3 rounded-xl">
-                                <div className="text-xs text-[#8e8e93]">Premium</div>
-                                <div className="text-xl font-bold text-[#b9f2ff]">{user?.premiumReferralCount || 0}</div>
-                            </div>
-                            <div className="bg-[#1f1f20] p-3 rounded-xl col-span-2">
-                                <div className="text-xs text-[#8e8e93]">Total Earnings</div>
-                                <div className="text-xl font-bold text-[#4c9ce2]">{(user?.referralEarnings || 0).toLocaleString()} PAWS</div>
-                            </div>
+                        <div className="w-full bg-[#2d2d2e] rounded-full h-2">
+                            <div 
+                                className="h-2 rounded-full transition-all duration-500"
+                                style={{ 
+                                    width: `${progress}%`,
+                                    backgroundColor: tierColors[nextTier.label] || '#4c9ce2'
+                                }}
+                            />
+                        </div>
+                        <div className="text-xs text-[#8e8e93] mt-1">
+                            +{nextTier.bonusReward.toLocaleString()} PAWS bonus
                         </div>
                     </div>
+                )}
 
-                    {availableTiers.length > 0 && (
-                        <div className="mt-4">
-                            <div className="text-sm font-semibold mb-2 text-[#ffd700]">Claimable Rewards</div>
-                            <div className="space-y-2">
-                                {availableTiers.map(tier => (
-                                    <button
-                                        key={tier.level}
-                                        onClick={() => handleClaimTier(tier.level)}
-                                        disabled={claimingTier === tier.level}
-                                        className="w-full bg-[#1f1f20] border border-[#ffd700]/30 rounded-xl p-3 flex items-center justify-between active:scale-98 transition-transform"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div 
-                                                className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-black"
-                                                style={{ backgroundColor: tierColors[tier.label] }}
-                                            >
-                                                {tier.level}
-                                            </div>
-                                            <div className="text-left">
-                                                <div className="font-semibold">{tier.label}</div>
-                                                <div className="text-xs text-[#8e8e93]">{tier.requiredFriends} friends</div>
-                                            </div>
-                                        </div>
-                                        <div className="text-[#ffd700] font-bold">
-                                            +{tier.bonusReward.toLocaleString()}
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="mt-4 bg-[#151516] border border-[#2d2d2e] rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="text-sm font-semibold">Special Bonuses</div>
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between bg-[#1f1f20] p-3 rounded-lg">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg">⭐</span>
-                                    <div>
-                                        <div className="text-sm font-medium">Premium Friend</div>
-                                        <div className="text-xs text-[#8e8e93]">Extra bonus for Telegram Premium</div>
-                                    </div>
-                                </div>
-                                <div className="text-[#b9f2ff] font-bold">+{REFERRAL_REWARDS.premiumFriendBonus.toLocaleString()}</div>
-                            </div>
-                        </div>
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-[#1f1f20] p-3 rounded-xl">
+                        <div className="text-xs text-[#8e8e93]">Friends</div>
+                        <div className="text-xl font-bold">{refCount}</div>
                     </div>
-
-                    <div className="mt-4">
-                        <button
-                            onClick={() => setShowFriendsList(!showFriendsList)}
-                            className="w-full bg-[#151516] border border-[#2d2d2e] rounded-xl p-4 flex items-center justify-between"
-                        >
-                            <div className="text-left">
-                                <div className="text-sm font-semibold">Your Friends</div>
-                                <div className="text-xs text-[#8e8e93]">{friendsList.length} friends joined</div>
-                            </div>
-                            <div className={`transform transition-transform ${showFriendsList ? 'rotate-180' : ''}`}>
-                                ▼
-                            </div>
-                        </button>
-
-                        {showFriendsList && (
-                            <div className="mt-2 space-y-2">
-                                {friendsList.length > 0 ? (
-                                    friendsList.map(friend => (
-                                        <div key={friend.id} className="bg-[#1f1f20] rounded-xl p-3 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-[#2d2d2e] rounded-full flex items-center justify-center text-lg">
-                                                    {friend.isPremium ? '⭐' : '👤'}
-                                                </div>
-                                                <div>
-                                                    <div className="font-medium text-sm">{friend.username}</div>
-                                                    <div className="text-xs text-[#8e8e93]">{formatTimeAgo(friend.joinedAt)}</div>
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-[#4c9ce2]">
-                                                +{friend.bonusEarned.toLocaleString()}
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="bg-[#1f1f20] rounded-xl p-8 text-center">
-                                        <Image
-                                            src={paws}
-                                            alt="Paws"
-                                            width={80}
-                                            height={60}
-                                            className="mx-auto mb-3 opacity-50"
-                                        />
-                                        <p className="text-[#8e8e93] text-sm">No friends yet. Invite someone!</p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                    <div className="bg-[#1f1f20] p-3 rounded-xl">
+                        <div className="text-xs text-[#8e8e93]">Premium</div>
+                        <div className="text-xl font-bold text-[#b9f2ff]">{premiumCount}</div>
                     </div>
-
-                    <div className="mt-4 bg-[#151516] border border-[#2d2d2e] rounded-xl p-4">
-                        <div className="text-sm text-[#8e8e93] mb-2">Your invite link</div>
-                        <div className="text-xs break-all bg-[#1f1f20] p-3 rounded-lg text-white font-mono">
-                            {directInviteLink || 'Generating...'}
-                        </div>
-                        <button
-                            id="copy-btn"
-                            onClick={copyLink}
-                            disabled={!directInviteLink}
-                            className={`mt-3 w-full text-white py-3 rounded-xl disabled:opacity-50 active:scale-98 transition-transform ${
-                                copyFeedback['copy-btn'] ? 'bg-green-600' : 'bg-[#2d2d2e]'
-                            }`}
-                        >
-                            {copyFeedback['copy-btn'] ? 'Copied!' : 'Copy Link'}
-                        </button>
+                    <div className="bg-[#1f1f20] p-3 rounded-xl col-span-2">
+                        <div className="text-xs text-[#8e8e93]">Total Earnings</div>
+                        <div className="text-xl font-bold text-[#4c9ce2]">{earnings.toLocaleString()} PAWS</div>
                     </div>
+                </div>
+            </div>
 
-                    {showShareModal && (
-                        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => setShowShareModal(false)}>
-                            <div className="w-full max-w-md bg-[#1c1c1e] rounded-t-3xl p-6 animate-slide-up" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-xl font-bold">Share Invite Link</h3>
-                                    <button onClick={() => setShowShareModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#2d2d2e]">✕</button>
-                                </div>
-                                
-                                <div className="space-y-3">
-                                    <button
-                                        onClick={shareViaTelegram}
-                                        className="w-full flex items-center gap-4 bg-[#2d89ef] text-white p-4 rounded-xl active:scale-98 transition-transform"
-                                    >
-                                        <div className="text-2xl">📨</div>
-                                        <div className="text-left">
-                                            <div className="font-semibold">Share via Telegram</div>
-                                            <div className="text-xs opacity-80">Send to friends or groups</div>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={shareViaNative}
-                                        className="w-full flex items-center gap-4 bg-[#2d2d2e] text-white p-4 rounded-xl active:scale-98 transition-transform"
-                                    >
-                                        <div className="text-2xl">📤</div>
-                                        <div className="text-left">
-                                            <div className="font-semibold">More Options</div>
-                                            <div className="text-xs text-gray-400">Share to other apps</div>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        onClick={copyInviteLink}
-                                        className="w-full flex items-center gap-4 bg-[#2d2d2e] text-white p-4 rounded-xl active:scale-98 transition-transform"
-                                    >
-                                        <div className="text-2xl">📋</div>
-                                        <div className="text-left">
-                                            <div className="font-semibold">Copy Link</div>
-                                            <div className="text-xs text-gray-400">Copy to clipboard</div>
-                                        </div>
-                                    </button>
-                                </div>
-
-                                <div className="mt-6 bg-[#1f1f20] p-3 rounded-lg">
-                                    <div className="text-xs text-[#8e8e93] mb-1">Your unique link:</div>
-                                    <div className="text-xs break-all text-white font-mono">{directInviteLink}</div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="fixed bottom-[80px] left-0 right-0 py-4 flex justify-center bg-gradient-to-t from-black via-black to-transparent">
-                        <div className="w-full max-w-md px-4">
+            {availableTiers.length > 0 && (
+                <div className="mt-4">
+                    <div className="text-sm font-semibold mb-2 text-[#ffd700]">Claimable Rewards</div>
+                    <div className="space-y-2">
+                        {availableTiers.map(tier => (
                             <button
-                                id="invite-btn"
-                                onClick={handleInvite}
-                                className={`w-full text-white py-4 rounded-xl text-lg font-bold active:scale-98 transition-transform shadow-lg shadow-[#4c9ce2]/20 ${
-                                    copyFeedback['invite-btn'] ? 'bg-green-600' : 'bg-[#4c9ce2]'
-                                }`}
+                                key={tier.level}
+                                onClick={() => handleClaimTier(tier.level)}
+                                disabled={claimingTier === tier.level}
+                                className="w-full bg-[#1f1f20] border border-[#ffd700]/30 rounded-xl p-3 flex items-center justify-between active:scale-98 transition-transform"
                             >
-                                {copyFeedback['invite-btn'] ? 'Copied!' : 'Invite a Friend'}
+                                <div className="flex items-center gap-3">
+                                    <div 
+                                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-black"
+                                        style={{ backgroundColor: tierColors[tier.label] }}
+                                    >
+                                        {tier.level}
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-semibold">{tier.label}</div>
+                                        <div className="text-xs text-[#8e8e93]">{tier.requiredFriends} friends</div>
+                                    </div>
+                                </div>
+                                <div className="text-[#ffd700] font-bold">
+                                    +{tier.bonusReward.toLocaleString()}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="mt-4 bg-[#151516] border border-[#2d2d2e] rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-semibold">Special Bonuses</div>
+                </div>
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between bg-[#1f1f20] p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">⭐</span>
+                            <div>
+                                <div className="text-sm font-medium">Premium Friend</div>
+                                <div className="text-xs text-[#8e8e93]">Extra bonus for Telegram Premium</div>
+                            </div>
+                        </div>
+                        <div className="text-[#b9f2ff] font-bold">+{REFERRAL_REWARDS.premiumFriendBonus.toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-4">
+                <button
+                    onClick={() => setShowFriendsList(!showFriendsList)}
+                    className="w-full bg-[#151516] border border-[#2d2d2e] rounded-xl p-4 flex items-center justify-between"
+                >
+                    <div className="text-left">
+                        <div className="text-sm font-semibold">Your Friends</div>
+                        <div className="text-xs text-[#8e8e93]">{friendsList.length} friends joined</div>
+                    </div>
+                    <div className={`transform transition-transform ${showFriendsList ? 'rotate-180' : ''}`}>
+                        ▼
+                    </div>
+                </button>
+
+                {showFriendsList && (
+                    <div className="mt-2 space-y-2">
+                        {friendsList.length > 0 ? (
+                            friendsList.map(friend => (
+                                <div key={friend.id} className="bg-[#1f1f20] rounded-xl p-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-[#2d2d2e] rounded-full flex items-center justify-center text-lg">
+                                            {friend.isPremium ? '⭐' : '👤'}
+                                        </div>
+                                        <div>
+                                            <div className="font-medium text-sm">{friend.username}</div>
+                                            <div className="text-xs text-[#8e8e93]">{formatTimeAgo(friend.joinedAt)}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-[#4c9ce2]">
+                                        +{friend.bonusEarned.toLocaleString()}
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="bg-[#1f1f20] rounded-xl p-8 text-center">
+                                <Image
+                                    src={paws}
+                                    alt="Paws"
+                                    width={80}
+                                    height={60}
+                                    className="mx-auto mb-3 opacity-50"
+                                />
+                                <p className="text-[#8e8e93] text-sm">No friends yet. Invite someone!</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="mt-4 bg-[#151516] border border-[#2d2d2e] rounded-xl p-4">
+                <div className="text-sm text-[#8e8e93] mb-2">Your invite link</div>
+                <div className="text-xs break-all bg-[#1f1f20] p-3 rounded-lg text-white font-mono">
+                    {directInviteLink || 'Generating...'}
+                </div>
+                <button
+                    id="copy-btn"
+                    onClick={copyLink}
+                    disabled={!directInviteLink}
+                    className={`mt-3 w-full text-white py-3 rounded-xl disabled:opacity-50 active:scale-98 transition-transform ${
+                        copyFeedback['copy-btn'] ? 'bg-green-600' : 'bg-[#2d2d2e]'
+                    }`}
+                >
+                    {copyFeedback['copy-btn'] ? 'Copied!' : 'Copy Link'}
+                </button>
+            </div>
+
+            {showShareModal && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => setShowShareModal(false)}>
+                    <div className="w-full max-w-md bg-[#1c1c1e] rounded-t-3xl p-6 animate-slide-up" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold">Share Invite Link</h3>
+                            <button onClick={() => setShowShareModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#2d2d2e]">✕</button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <button
+                                onClick={shareViaTelegram}
+                                className="w-full flex items-center gap-4 bg-[#2d89ef] text-white p-4 rounded-xl active:scale-98 transition-transform"
+                            >
+                                <div className="text-2xl">📨</div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Share via Telegram</div>
+                                    <div className="text-xs opacity-80">Send to friends or groups</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={shareViaNative}
+                                className="w-full flex items-center gap-4 bg-[#2d2d2e] text-white p-4 rounded-xl active:scale-98 transition-transform"
+                            >
+                                <div className="text-2xl">📤</div>
+                                <div className="text-left">
+                                    <div className="font-semibold">More Options</div>
+                                    <div className="text-xs text-gray-400">Share to other apps</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={copyInviteLink}
+                                className="w-full flex items-center gap-4 bg-[#2d2d2e] text-white p-4 rounded-xl active:scale-98 transition-transform"
+                            >
+                                <div className="text-2xl">📋</div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Copy Link</div>
+                                    <div className="text-xs text-gray-400">Copy to clipboard</div>
+                                </div>
                             </button>
                         </div>
+
+                        <div className="mt-6 bg-[#1f1f20] p-3 rounded-lg">
+                            <div className="text-xs text-[#8e8e93] mb-1">Your unique link:</div>
+                            <div className="text-xs break-all text-white font-mono">{directInviteLink}</div>
+                        </div>
                     </div>
-                </>
+                </div>
             )}
+
+            <div className="fixed bottom-[80px] left-0 right-0 py-4 flex justify-center bg-gradient-to-t from-black via-black to-transparent">
+                <div className="w-full max-w-md px-4">
+                    <button
+                        id="invite-btn"
+                        onClick={handleInvite}
+                        className={`w-full text-white py-4 rounded-xl text-lg font-bold active:scale-98 transition-transform shadow-lg shadow-[#4c9ce2]/20 ${
+                            copyFeedback['invite-btn'] ? 'bg-green-600' : 'bg-[#4c9ce2]'
+                        }`}
+                    >
+                        {copyFeedback['invite-btn'] ? 'Copied!' : 'Invite a Friend'}
+                    </button>
+                </div>
+            </div>
         </div>
     )
 }
