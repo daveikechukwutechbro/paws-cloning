@@ -1,12 +1,3 @@
-// components/HomeTab.tsx
-
-/**
- * This project was developed by Nikandr Surkov.
- * 
- * YouTube: https://www.youtube.com/@NikandrSurkov
- * GitHub: https://github.com/nikandr-surkov
- */
-
 'use client'
 
 import Wallet from '@/icons/Wallet'
@@ -16,7 +7,7 @@ import Star from '@/icons/Star'
 import Image from 'next/image'
 import ArrowRight from '@/icons/ArrowRight'
 import { sparkles } from '@/images'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance } from '@/utils/userUtils'
 import {
@@ -27,11 +18,12 @@ import {
     restoreWalletConnection,
     SupportedWallet
 } from '@/utils/tonService'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/utils/firebaseClient'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
     
-    // Get user ID - wait for user to load first
     const [userId, setUserId] = useState('')
     
     useEffect(() => {
@@ -43,23 +35,17 @@ const HomeTab = () => {
         }
     }, [user])
     
-    const timerKey = `lastClaim_${userId}`
-    const balanceKey = `paws_balance_${userId}`
+    const timerKey = userId ? `lastClaim_${userId}` : 'lastClaim_default'
+    const balanceKey = userId ? `paws_balance_${userId}` : 'paws_balance_default'
     
-    // Load balance from localStorage immediately, then update from Firebase
-    const [localBalance, setLocalBalance] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem(balanceKey)
-            return saved ? parseInt(saved) : 50000
-        }
-        return 50000
-    })
+    const [displayBalance, setDisplayBalance] = useState(50000)
     const [timeRemaining, setTimeRemaining] = useState(0)
     const [walletConnected, setWalletConnected] = useState(false)
     const [walletAddress, setWalletAddress] = useState<string | null>(null)
     const [showWalletOptions, setShowWalletOptions] = useState(false)
     const [showBuyMenu, setShowBuyMenu] = useState(false)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
+    const [isClaiming, setIsClaiming] = useState(false)
     
     const buyPackages = [
         { name: '1,000 PAWS', price: '$1', amount: 1000 },
@@ -68,11 +54,36 @@ const HomeTab = () => {
         { name: '50,000 PAWS', price: '$30', amount: 50000 },
     ]
 
+    const syncBalanceFromFirebase = useCallback(async () => {
+        if (!userId) return
+        try {
+            const userRef = doc(db, 'users', userId)
+            const userSnap = await getDoc(userRef)
+            if (userSnap.exists()) {
+                const data = userSnap.data()
+                const firebaseBalance = data.balance || 50000
+                setDisplayBalance(firebaseBalance)
+                localStorage.setItem(balanceKey, firebaseBalance.toString())
+            }
+        } catch (error) {
+            console.error('Error syncing balance from Firebase:', error)
+        }
+    }, [userId, balanceKey])
+
+    useEffect(() => {
+        if (userId) {
+            syncBalanceFromFirebase()
+        }
+    }, [userId, syncBalanceFromFirebase])
+
     useEffect(() => {
         const savedLastClaim = localStorage.getItem(timerKey)
         if (savedLastClaim) {
-            // keep timer active based on last claim timestamp
-            parseInt(savedLastClaim)
+            const lastClaimTime = parseInt(savedLastClaim)
+            const remaining = 180000 - (Date.now() - lastClaimTime)
+            if (remaining > 0) {
+                setTimeRemaining(remaining)
+            }
         }
     }, [timerKey])
 
@@ -88,19 +99,6 @@ const HomeTab = () => {
         initializeWalletState()
     }, [])
 
-    // Update from Firebase when loaded
-    useEffect(() => {
-        if (!loading && user?.balance) {
-            setLocalBalance(user.balance)
-            localStorage.setItem(balanceKey, user.balance.toString())
-        }
-    }, [loading, user, balanceKey])
-
-    // Save to localStorage whenever balance changes
-    useEffect(() => {
-        localStorage.setItem(balanceKey, localBalance.toString())
-    }, [localBalance, balanceKey])
-
     useEffect(() => {
         const interval = setInterval(() => {
             const saved = localStorage.getItem(timerKey)
@@ -114,20 +112,29 @@ const HomeTab = () => {
     }, [timerKey])
 
     const claimHourlyReward = async () => {
-        if (!userId) {
-            alert('Please refresh the page first')
-            return
-        }
+        if (!userId || isClaiming) return
         
-        const newBalance = localBalance + 2000
-        setLocalBalance(newBalance)
-        
-        const now = Date.now()
-        localStorage.setItem(timerKey, now.toString())
+        setIsClaiming(true)
+        try {
+            const newBalance = displayBalance + 2000
+            setDisplayBalance(newBalance)
+            localStorage.setItem(balanceKey, newBalance.toString())
+            
+            const now = Date.now()
+            localStorage.setItem(timerKey, now.toString())
 
-        await updateUserBalance(userId, newBalance)
-        
-        setTimeout(() => refreshUser(), 500)
+            await updateUserBalance(userId, newBalance)
+            
+            setTimeout(() => {
+                syncBalanceFromFirebase()
+                refreshUser()
+            }, 1000)
+        } catch (error) {
+            console.error('Error claiming reward:', error)
+            alert('Failed to claim reward. Please try again.')
+        } finally {
+            setIsClaiming(false)
+        }
     }
 
     const formatTime = (ms: number) => {
@@ -137,8 +144,7 @@ const HomeTab = () => {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
     }
 
-    const displayBalance = localBalance
-    const isNewUser = user?.balance === 50000
+    const isNewUser = displayBalance === 50000
 
     const walletOptions: { key: SupportedWallet; label: string }[] = [
         { key: 'telegram-wallet', label: 'Telegram TON Wallet' },
@@ -172,8 +178,7 @@ const HomeTab = () => {
         return `${address.slice(0, 6)}...${address.slice(-6)}`
     }
 
-    // Show loading while syncing with Firebase
-    if (loading && localBalance === 50000) {
+    if (loading && displayBalance === 50000) {
         return (
             <div className="home-tab-con flex flex-col items-center justify-center min-h-[400px]">
                 <PawsLogo className="w-20 h-20 animate-pulse" />
@@ -191,7 +196,6 @@ const HomeTab = () => {
 
     return (
         <div className={`home-tab-con transition-all duration-300`}>
-            {/* Connect Wallet Button */}
             {walletConnected ? (
                 <div className="w-full flex flex-col items-center mt-4 px-4">
                     <button
@@ -259,7 +263,6 @@ const HomeTab = () => {
                 </div>
             )}
 
-            {/* PAWS Balance */}
             <div className="flex flex-col items-center mt-8">
                 <PawsLogo className="w-28 h-28 mb-4" />
                 <div className="flex items-center gap-1 text-center">
@@ -279,7 +282,6 @@ const HomeTab = () => {
                 </div>
             </div>
 
-            {/* Hourly Claim */}
             <div className="px-4 mt-6">
                 <div className="bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg p-4">
                     <div className="text-center mb-3">
@@ -294,15 +296,15 @@ const HomeTab = () => {
                     ) : (
                         <button
                             onClick={claimHourlyReward}
-                            className="w-full bg-[#007aff] text-white py-2 rounded-lg font-medium hover:bg-[#0056cc] transition-colors"
+                            disabled={isClaiming}
+                            className="w-full bg-[#007aff] text-white py-2 rounded-lg font-medium hover:bg-[#0056cc] transition-colors disabled:opacity-50"
                         >
-                            Claim 2000 PAWS
+                            {isClaiming ? 'Claiming...' : 'Claim 2000 PAWS'}
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Community Dropdown */}
             <div className="px-4 mt-8 mb-8">
                 <button 
                     onClick={() => setShowCommunityMenu(!showCommunityMenu)}
@@ -340,7 +342,6 @@ const HomeTab = () => {
                     <ArrowRight className="w-6 h-6 text-gray-400" />
                 </button>
 
-                {/* Buy PAWS Button */}
                 <button 
                     onClick={() => setShowBuyMenu(!showBuyMenu)}
                     className="w-full bg-[#007aff] border border-[#007aff] rounded-lg px-4 py-3 flex items-center justify-between mt-3"

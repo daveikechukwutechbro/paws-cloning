@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { applyReferralReward, getOrCreateUser, User } from '@/utils/userUtils'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/utils/firebaseClient'
 
 type UserContextType = {
     user: User | null
@@ -13,7 +15,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
 
-    const refreshUser = async () => {
+    const fetchFreshUserData = useCallback(async (userId: string): Promise<User | null> => {
+        const userRef = doc(db, 'users', userId)
+        const userSnap = await getDoc(userRef)
+        if (userSnap.exists()) {
+            return userSnap.data() as User
+        }
+        return null
+    }, [])
+
+    const refreshUser = useCallback(async () => {
         let userId = ''
         let username = ''
         let isPremium = false
@@ -45,19 +56,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
         try {
             const userData = await getOrCreateUser(userId, username, refCode, isPremium)
             if (userData) {
-                setUser(userData)
                 await applyReferralReward(userId)
+                const freshData = await fetchFreshUserData(userId)
+                if (freshData) {
+                    setUser(freshData)
+                } else {
+                    setUser(userData)
+                }
             }
         } catch (error) {
             console.error('Error:', error)
         } finally {
             setLoading(false)
         }
-    }
+    }, [fetchFreshUserData])
 
     useEffect(() => {
         refreshUser()
-    }, [])
+    }, [refreshUser])
 
     return (
         <UserContext.Provider value={{ user, loading, refreshUser }}>

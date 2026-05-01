@@ -39,7 +39,16 @@ export async function getOrCreateUser(
     const userSnap = await getDoc(userRef)
     
     if (userSnap.exists()) {
-        return userSnap.data() as User
+        const existingData = userSnap.data() as User
+        if (existingData.username !== username || existingData.isPremium !== isPremium) {
+            await setDoc(userRef, {
+                username,
+                isPremium,
+                id: userId
+            }, { merge: true })
+        }
+        const freshSnap = await getDoc(userRef)
+        return freshSnap.data() as User
     } else {
         const newUser: User = {
             id: userId,
@@ -54,7 +63,8 @@ export async function getOrCreateUser(
             tierRewardsClaimed: [],
             friendsList: [],
             referralRewardClaimed: false,
-            isPremium: isPremium
+            isPremium: isPremium,
+            created_at: new Date().toISOString()
         }
         await setDoc(userRef, newUser)
 
@@ -62,23 +72,25 @@ export async function getOrCreateUser(
             await processNewReferral(referredBy, userId, username, isPremium)
         }
         
-        return newUser
+        const freshSnap = await getDoc(userRef)
+        return freshSnap.data() as User
     }
 }
 
-export async function applyReferralReward(userId: string): Promise<void> {
+export async function applyReferralReward(userId: string): Promise<number | null> {
     const userRef = doc(db, 'users', userId)
     const userSnap = await getDoc(userRef)
 
-    if (!userSnap.exists()) return
+    if (!userSnap.exists()) return null
 
     const userData = userSnap.data() as User
-    if (userData.referralRewardClaimed) return
+    if (userData.referralRewardClaimed) return userData.balance
 
     const inviterId = userData.referredBy
     if (!inviterId || inviterId === userId) {
         await setDoc(userRef, { referralRewardClaimed: true }, { merge: true })
-        return
+        const freshSnap = await getDoc(userRef)
+        return (freshSnap.data() as User).balance
     }
 
     const bonusForInvitedUser = 2000
@@ -87,7 +99,7 @@ export async function applyReferralReward(userId: string): Promise<void> {
     await setDoc(
         userRef,
         {
-            balance: (userData.balance || 0) + bonusForInvitedUser,
+            balance: increment(bonusForInvitedUser),
             referralRewardClaimed: true,
             id: userId
         },
@@ -105,6 +117,9 @@ export async function applyReferralReward(userId: string): Promise<void> {
         },
         { merge: true }
     )
+
+    const freshSnap = await getDoc(userRef)
+    return (freshSnap.data() as User).balance
 }
 
 export async function updateUserBalance(userId: string, balance: number): Promise<void> {
