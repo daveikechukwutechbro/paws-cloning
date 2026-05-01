@@ -42,11 +42,17 @@ const FriendsTab = () => {
     }, [user?.id])
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            loadReferralData()
-        }, 500)
-        return () => clearTimeout(timer)
-    }, [loadReferralData])
+        if (!user?.id) return
+        loadReferralData()
+        const interval = setInterval(loadReferralData, 5000)
+        return () => clearInterval(interval)
+    }, [user?.id, loadReferralData])
+
+    useEffect(() => {
+        if (!user?.id) return
+        const interval = setInterval(() => refreshUser(), 8000)
+        return () => clearInterval(interval)
+    }, [user?.id, refreshUser])
 
     const directInviteLink = useMemo(() => {
         if (!user?.id) return ''

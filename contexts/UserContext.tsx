@@ -33,6 +33,12 @@ function getFallbackUser(): { userId: string; username: string; isPremium: boole
     }
 }
 
+function resolveReferrerId(refCode: string): string {
+    if (!refCode) return refCode
+    if (refCode.startsWith('tg_') || refCode.startsWith('user_')) return refCode
+    return 'tg_' + refCode
+}
+
 function getReferralCode(): string | undefined {
     const tg = (window as any).Telegram?.WebApp
     const params = new URLSearchParams(window.location.search)
@@ -41,6 +47,11 @@ function getReferralCode(): string | undefined {
     if (!refCode && tg?.initDataUnsafe?.start_param) {
         refCode = tg.initDataUnsafe.start_param
     }
+    
+    if (refCode) {
+        refCode = resolveReferrerId(refCode)
+    }
+    
     return refCode
 }
 
