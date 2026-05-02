@@ -47,6 +47,7 @@ export interface UserReferralData {
     referralCount: number
     premiumReferralCount: number
     referralEarnings: number
+    balance?: number
     tierLevel: number
     tierRewardsClaimed: number[]
     friendsList: ReferralFriend[]
