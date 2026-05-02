@@ -149,8 +149,8 @@ const stages: StageData[] = [
     }
 ]
 
-const PawSvg: React.FC<{ size?: number; className?: string }> = ({ size = 20, className = '' }) => (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
+const PawSvg: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({ size = 20, className = '', style }) => (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="currentColor" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
         <ellipse cx="14" cy="12" rx="5" ry="6" transform="rotate(-15 14 12)" />
         <ellipse cx="24" cy="7" rx="4.5" ry="5.5" />
         <ellipse cx="34" cy="12" rx="5" ry="6" transform="rotate(15 34 12)" />
