@@ -14,13 +14,14 @@ interface Stage {
     glowColor: string
 }
 
-const PawPrint: React.FC<{ className?: string; size?: number; glow?: boolean }> = ({ className = '', size = 24, glow = false }) => (
+const PawPrint: React.FC<{ className?: string; size?: number; glow?: boolean; style?: React.CSSProperties }> = ({ className = '', size = 24, glow = false, style }) => (
     <svg
         className={`${className} ${glow ? 'paw-glow' : ''}`}
         width={size}
         height={size}
         viewBox="0 0 48 48"
         fill="currentColor"
+        style={style}
         xmlns="http://www.w3.org/2000/svg"
     >
         <ellipse cx="14" cy="12" rx="5" ry="6" transform="rotate(-15 14 12)" />
