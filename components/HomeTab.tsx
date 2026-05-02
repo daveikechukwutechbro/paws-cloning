@@ -20,6 +20,8 @@ import {
 } from '@/utils/tonService'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
+import FootprintMap from './FootprintMap'
+import PawPrint from '@/icons/PawPrint'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -46,6 +48,7 @@ const HomeTab = () => {
     const [showBuyMenu, setShowBuyMenu] = useState(false)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
     const [isClaiming, setIsClaiming] = useState(false)
+    const [showFootprintMap, setShowFootprintMap] = useState(false)
     
     const buyPackages = [
         { name: '1,000 PAWS', price: '$1', amount: 1000 },
@@ -196,6 +199,8 @@ const HomeTab = () => {
 
     return (
         <div className={`home-tab-con transition-all duration-300`}>
+            {showFootprintMap && <FootprintMap onClose={() => setShowFootprintMap(false)} />}
+
             {walletConnected ? (
                 <div className="w-full flex flex-col items-center mt-4 px-4">
                     <button
@@ -306,6 +311,20 @@ const HomeTab = () => {
             </div>
 
             <div className="px-4 mt-8 mb-8">
+                <button 
+                    onClick={() => setShowFootprintMap(true)}
+                    className="shine-effect w-full bg-gradient-to-r from-[#0a1628] to-[#0d1f3c] border border-[#4c9ce2] rounded-lg px-4 py-3 flex items-center justify-between mb-3"
+                >
+                    <div className="flex items-center gap-3">
+                        <PawPrint className="w-8 h-8 text-[#4c9ce2]" />
+                        <div className="text-left">
+                            <span className="font-medium text-white block">Footprint Map</span>
+                            <span className="text-xs text-[#868686]">View our roadmap & journey</span>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-6 h-6 text-[#4c9ce2]" />
+                </button>
+
                 <button 
                     onClick={() => setShowCommunityMenu(!showCommunityMenu)}
                     className="shine-effect w-full bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg px-4 py-2 flex items-center justify-between"
