@@ -55,11 +55,11 @@ export interface UserReferralData {
     lastReferralAt?: Timestamp
 }
 
-async function checkAndUpdateTierInTransaction(
+function checkAndUpdateTierInTransaction(
     inviterRef: any,
     referralCount: number,
     claimedTiers: number[]
-): Promise<{ level: number; bonus: number } | null> {
+): { level: number; bonus: number } | null {
     let newTierLevel = 0
 
     for (const tier of REFERRAL_TIERS) {
