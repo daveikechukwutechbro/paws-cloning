@@ -224,7 +224,7 @@ const FootprintMap: React.FC<{ onClose: () => void }> = ({ onClose }) => (
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                    A refined, story-driven visual timeline that begins with the project's origin story, moves through its present second-mining stage, and stretches into a six-month roadmap.
+                    A refined, story-driven visual timeline that begins with the project&apos;s origin story, moves through its present second-mining stage, and stretches into a six-month roadmap.
                 </p>
 
                 {/* Chips */}
