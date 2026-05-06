@@ -7,6 +7,7 @@ import Star from '@/icons/Star'
 import ArrowRight from '@/icons/ArrowRight'
 import { sparkles } from '@/images'
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance } from '@/utils/userUtils'
 import {
@@ -283,7 +284,9 @@ const HomeTab = () => {
                     <span style={{ color: currentTier.color }}>·</span>
                     <span style={{ color: '#868686', fontSize: 13 }}>{estimatedRank}</span>
                     <span style={{ color: '#868686' }}>RANK</span>
-                    <ArrowRight className="w-5 h-5" style={{ color: currentTier.color }} />
+                    <span className="w-5 h-5 flex items-center justify-center" style={{ color: currentTier.color }}>
+                        <ArrowRight className="w-5 h-5" />
+                    </span>
                 </button>
             </div>
 
@@ -388,8 +391,8 @@ const HomeTab = () => {
             </div>
 
             {/* Rank Modal */}
-            {showRankModal && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => setShowRankModal(false)}>
+            {showRankModal && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/70" onClick={() => setShowRankModal(false)}>
                     <div className="w-full max-w-md bg-black border-t border-[#2d2d2e] rounded-t-2xl animate-slide-up max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <div className="p-5 pb-32">
                             <div className="flex items-center justify-between mb-5">
@@ -473,7 +476,7 @@ const HomeTab = () => {
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
         </div>
     )
 }
