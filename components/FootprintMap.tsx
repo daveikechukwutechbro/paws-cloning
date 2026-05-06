@@ -1,101 +1,140 @@
 'use client'
 
-const PawIcon = ({ size = 62 }: { size?: number }) => {
-    const toeW = size * 0.258
-    const toeH = size * 0.355
-    const padW = size * 0.452
-    const padH = size * 0.387
-    const padTop = size * 0.419
-    return (
-        <svg width={size} height={size} viewBox="0 0 62 62" fill="none">
-            <ellipse cx={18} cy={10} rx={toeW / 2} ry={toeH / 2} fill="rgba(255,255,255,0.92)" transform="rotate(-18 18 10)" />
-            <ellipse cx={44} cy={10} rx={toeW / 2} ry={toeH / 2} fill="rgba(255,255,255,0.92)" transform="rotate(18 44 10)" />
-            <ellipse cx={8} cy={24} rx={toeW / 2} ry={toeH / 2} fill="rgba(255,255,255,0.92)" transform="rotate(-35 8 24)" />
-            <ellipse cx={54} cy={24} rx={toeW / 2} ry={toeH / 2} fill="rgba(255,255,255,0.92)" transform="rotate(35 54 24)" />
-            <ellipse cx={31} cy={padTop + padH / 2} rx={padW / 2} ry={padH / 2} fill="rgba(255,255,255,0.92)" />
-        </svg>
-    )
-}
-
-const stages = [
-    {
-        phase: 'Phase 1 · Foundation',
-        align: 'left' as const,
-        title: '',
-        items: ['Basic game', 'Mining updates', 'Earn tasks'],
-        badges: []
-    },
-    {
-        phase: 'Phase 2 · Launch',
-        align: 'right' as const,
-        title: '',
-        items: ['TGE 1 successfully completed', 'First phase of token utility activated', 'Early ecosystem traction and visibility established'],
-        badges: []
-    },
-    {
-        phase: 'Phase 3 · Momentum',
-        align: 'left' as const,
-        title: '',
-        items: ['Beta users fully onboarded', 'Performance improvements completed', 'Partnerships and integrations expanded'],
-        badges: []
-    },
-    {
-        phase: 'Phase 4 · Present',
-        align: 'right' as const,
-        title: 'Second Mining Phase',
-        description: 'Active mining, strong engagement, and ecosystem readiness defining the current stage.',
-        badges: ['Active mining', 'Community retention', 'Reward clarity', 'Transparency']
-    },
-    {
-        phase: 'Phase 5',
-        align: 'left' as const,
-        title: '',
-        items: ['New utility features introduced', 'User growth via targeted campaigns', 'Consistent updates and reporting'],
-        badges: []
-    },
-    {
-        phase: 'Phase 6',
-        align: 'right' as const,
-        title: '',
-        items: ['Feature reveals and utility tease', 'Incentive-driven ecosystem activity', 'Liquidity expansion strategy'],
-        badges: []
-    },
-    {
-        phase: 'Phase 7',
-        align: 'left' as const,
-        title: '',
-        items: ['TGE 2 successfully completed', 'Broader liquidity and trading access achieved'],
-        badges: []
-    },
-]
-
 const FootprintMap: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto animate-slide-up" style={{ background: 'radial-gradient(circle at top, #1e293b 0%, #0f172a 55%, #020617 100%)' }}>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
             <style>{`
-                @keyframes paw-float {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-4px); }
+                .fp-root {
+                    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+                    background: radial-gradient(circle at top, #1e293b 0%, #0f172a 55%, #020617 100%);
+                    color: #e5e7eb;
+                    padding: 28px;
                 }
-                .paw-float { animation: paw-float 3s ease-in-out infinite; }
+                .fp-frame {
+                    max-width: 1400px;
+                    margin: 0 auto;
+                    background: rgba(15, 23, 42, 0.8);
+                    border: 1px solid rgba(148, 163, 184, 0.18);
+                    border-radius: 28px;
+                    padding: 28px;
+                    box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+                    backdrop-filter: blur(8px);
+                }
+                .fp-hero {
+                    background: linear-gradient(180deg, rgba(31,41,55,0.95), rgba(17,24,39,0.96));
+                    border: 1px solid rgba(148,163,184,0.15);
+                    border-radius: 24px;
+                    padding: 22px;
+                }
+                .fp-h1 {
+                    margin: 0 0 10px;
+                    font-size: 34px;
+                    line-height: 1.08;
+                    letter-spacing: -0.03em;
+                    font-weight: 700;
+                }
+                .fp-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+                .fp-chip {
+                    border: 1px solid rgba(245,158,11,0.35);
+                    color: #fde68a;
+                    background: rgba(245,158,11,0.10);
+                    border-radius: 999px;
+                    padding: 8px 12px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    letter-spacing: 0.02em;
+                }
+                .fp-timeline { position: relative; padding: 18px 0 10px; }
+                .fp-timeline::before {
+                    content: "";
+                    position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; transform: translateX(-50%);
+                    border-radius: 999px;
+                    background: linear-gradient(180deg, #60a5fa, #f59e0b, #22c55e);
+                    box-shadow: 0 0 18px rgba(96,165,250,0.22);
+                }
+                .fp-stage {
+                    display: grid; grid-template-columns: 1fr 120px 1fr; gap: 18px; align-items: center; margin: 18px 0; position: relative;
+                }
+                .fp-stage.fp-left .fp-content { grid-column: 1; }
+                .fp-stage.fp-left .fp-icon { grid-column: 2; }
+                .fp-stage.fp-left .fp-blank { grid-column: 3; }
+                .fp-stage.fp-right .fp-blank { grid-column: 1; }
+                .fp-stage.fp-right .fp-icon { grid-column: 2; }
+                .fp-stage.fp-right .fp-content { grid-column: 3; }
+
+                .fp-blank { min-height: 10px; }
+                .fp-content {
+                    background: linear-gradient(180deg, rgba(31,41,55,0.96), rgba(15,23,42,0.98));
+                    border: 1px solid rgba(148,163,184,0.14);
+                    border-radius: 24px; padding: 20px 22px; min-height: 150px;
+                    box-shadow: 0 14px 40px rgba(0,0,0,0.18);
+                }
+                .fp-content h3 { margin: 0 0 8px; font-size: 20px; }
+                .fp-time {
+                    display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1;
+                    letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 10px;
+                }
+                .fp-content p, .fp-content li { margin: 0; color: #94a3b8; font-size: 14px; line-height: 1.65; }
+                .fp-content ul { margin: 10px 0 0 18px; padding: 0; }
+
+                .fp-icon {
+                    width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; position: relative; margin: 0 auto;
+                    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0.04) 35%, rgba(0,0,0,0.10) 100%);
+                    border: 1px solid rgba(255,255,255,0.12);
+                    box-shadow: inset 0 0 24px rgba(255,255,255,0.03), 0 12px 30px rgba(0,0,0,0.25);
+                }
+                .fp-paw { position: relative; width: 62px; height: 62px; }
+                .fp-toe, .fp-pad { position: absolute; background: rgba(255,255,255,0.92); box-shadow: inset -4px -4px 8px rgba(0,0,0,0.08); }
+                .fp-toe { width: 16px; height: 22px; border-radius: 50%; }
+                .fp-toe.fp-t1 { top: 0; left: 8px; transform: rotate(-18deg); }
+                .fp-toe.fp-t2 { top: 0; right: 8px; transform: rotate(18deg); }
+                .fp-toe.fp-t3 { top: 14px; left: 0; transform: rotate(-35deg); }
+                .fp-toe.fp-t4 { top: 14px; right: 0; transform: rotate(35deg); }
+                .fp-pad { width: 28px; height: 24px; border-radius: 50% 50% 44% 44%; left: 50%; top: 26px; transform: translateX(-50%); }
+
+                .fp-phase { margin-top: 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+                .fp-badge {
+                    background: rgba(96,165,250,0.10); border: 1px solid rgba(96,165,250,0.18); color: #dbeafe;
+                    border-radius: 14px; padding: 10px 12px; font-size: 12px; line-height: 1.45;
+                }
+
+                @media (max-width: 980px) {
+                    .fp-root { padding: 0; }
+                    .fp-frame { border-radius: 0; border-left: none; border-right: none; padding: 20px 16px; }
+                    .fp-hero { padding: 18px; }
+                    .fp-h1 { font-size: 24px; }
+                    .fp-timeline::before { left: 18px; transform: none; }
+                    .fp-stage { grid-template-columns: 42px 1fr; gap: 12px; margin: 14px 0; }
+                    .fp-stage .fp-icon { grid-column: 1; width: 42px; height: 42px; }
+                    .fp-stage.fp-left .fp-content, .fp-stage.fp-right .fp-content { grid-column: 2; }
+                    .fp-stage.fp-left .fp-blank, .fp-stage.fp-right .fp-blank { display: none; }
+                    .fp-paw { width: 22px; height: 22px; }
+                    .fp-toe { width: 6px; height: 10px; }
+                    .fp-toe.fp-t1 { left: 3px; }
+                    .fp-toe.fp-t2 { right: 3px; }
+                    .fp-toe.fp-t3 { top: 5px; left: 0; }
+                    .fp-toe.fp-t4 { top: 5px; right: 0; }
+                    .fp-pad { width: 12px; height: 10px; top: 8px; }
+                    .fp-icon { background: transparent; border: none; box-shadow: none; }
+                    .fp-phase { grid-template-columns: 1fr; }
+                    .fp-content { padding: 14px 16px; min-height: auto; }
+                }
             `}</style>
 
-            <div className="min-h-screen px-4 py-7 sm:px-7">
-                <div className="max-w-[1400px] mx-auto" style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(148,163,184,0.18)', borderRadius: 28, padding: 28, boxShadow: '0 30px 80px rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)' }}>
-                    
-                    {/* Header */}
+            <div className="fp-root">
+                <div className="fp-frame">
                     <div className="flex justify-between items-start mb-6">
-                        <div className="flex-1" style={{ background: 'linear-gradient(180deg, rgba(31,41,55,0.95), rgba(17,24,39,0.96))', border: '1px solid rgba(148,163,184,0.15)', borderRadius: 24, padding: 22 }}>
-                            <h1 className="text-[34px] leading-[1.08] tracking-[-0.03em] font-bold mb-3" style={{ letterSpacing: '-0.03em' }}>PAWS Token Footprint Map</h1>
-                            <div className="flex flex-wrap gap-2.5 mt-4">
-                                <span className="rounded-full px-3 py-2 text-[12px] font-semibold tracking-wide" style={{ border: '1px solid rgba(245,158,11,0.35)', color: '#fde68a', background: 'rgba(245,158,11,0.10)' }}>Origin to Present</span>
-                                <span className="rounded-full px-3 py-2 text-[12px] font-semibold tracking-wide" style={{ border: '1px solid rgba(245,158,11,0.35)', color: '#fde68a', background: 'rgba(245,158,11,0.10)' }}>Second Mining Era</span>
-                                <span className="rounded-full px-3 py-2 text-[12px] font-semibold tracking-wide" style={{ border: '1px solid rgba(245,158,11,0.35)', color: '#fde68a', background: 'rgba(245,158,11,0.10)' }}>Growth Milestones</span>
+                        <div className="fp-hero flex-1">
+                            <h1 className="fp-h1">PAWS Token Footprint Map</h1>
+                            <div className="fp-chips">
+                                <span className="fp-chip">Origin to Present</span>
+                                <span className="fp-chip">Second Mining Era</span>
+                                <span className="fp-chip">Growth Milestones</span>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="ml-4 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-white/10 transition-colors"
+                            className="ml-4 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors hover:bg-white/10"
                             style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)' }}
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -104,85 +143,102 @@ const FootprintMap: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         </button>
                     </div>
 
-                    {/* Timeline */}
-                    <div className="relative py-5">
-                        {/* Center line - desktop */}
-                        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 rounded-full" style={{ background: 'linear-gradient(180deg, #60a5fa, #f59e0b, #22c55e)', boxShadow: '0 0 18px rgba(96,165,250,0.22)' }} />
-                        {/* Left line - mobile */}
-                        <div className="md:hidden absolute left-[18px] top-0 bottom-0 w-1 rounded-full" style={{ background: 'linear-gradient(180deg, #60a5fa, #f59e0b, #22c55e)', boxShadow: '0 0 18px rgba(96,165,250,0.22)' }} />
+                    <div className="fp-timeline">
+                        <div className="fp-stage fp-left">
+                            <div className="fp-content">
+                                <div className="fp-time">Phase 1 · Foundation</div>
+                                <ul>
+                                    <li>Basic game</li>
+                                    <li>Mining updates</li>
+                                    <li>Earn tasks</li>
+                                </ul>
+                            </div>
+                            <div className="fp-icon"><div className="fp-paw"><div className="fp-toe fp-t1"></div><div className="fp-toe fp-t2"></div><div className="fp-toe fp-t3"></div><div className="fp-toe fp-t4"></div><div className="fp-pad"></div></div></div>
+                            <div className="fp-blank"></div>
+                        </div>
 
-                        {stages.map((stage, index) => {
-                            const isLeft = stage.align === 'left'
-                            return (
-                                <div key={index} className="relative mb-5 last:mb-0">
-                                    {/* Desktop: 3-column grid */}
-                                    <div className="hidden md:grid grid-cols-[1fr_120px_1fr] gap-5 items-center">
-                                        {isLeft ? (
-                                            <>
-                                                <ContentCard phase={stage.phase} title={stage.title} description={stage.description} items={stage.items} badges={stage.badges} />
-                                                <div className="paw-float flex justify-center">
-                                                    <div className="w-[120px] h-[120px] rounded-full flex items-center justify-center" style={{ background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0.04) 35%, rgba(0,0,0,0.10) 100%)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: 'inset 0 0 24px rgba(255,255,255,0.03), 0 12px 30px rgba(0,0,0,0.25)' }}>
-                                                        <PawIcon size={62} />
-                                                    </div>
-                                                </div>
-                                                <div />
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div />
-                                                <div className="paw-float flex justify-center">
-                                                    <div className="w-[120px] h-[120px] rounded-full flex items-center justify-center" style={{ background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0.04) 35%, rgba(0,0,0,0.10) 100%)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: 'inset 0 0 24px rgba(255,255,255,0.03), 0 12px 30px rgba(0,0,0,0.25)' }}>
-                                                        <PawIcon size={62} />
-                                                    </div>
-                                                </div>
-                                                <ContentCard phase={stage.phase} title={stage.title} description={stage.description} items={stage.items} badges={stage.badges} />
-                                            </>
-                                        )}
-                                    </div>
+                        <div className="fp-stage fp-right">
+                            <div className="fp-blank"></div>
+                            <div className="fp-icon"><div className="fp-paw"><div className="fp-toe fp-t1"></div><div className="fp-toe fp-t2"></div><div className="fp-toe fp-t3"></div><div className="fp-toe fp-t4"></div><div className="fp-pad"></div></div></div>
+                            <div className="fp-content">
+                                <div className="fp-time">Phase 2 · Launch</div>
+                                <ul>
+                                    <li>TGE 1 successfully completed</li>
+                                    <li>First phase of token utility activated</li>
+                                    <li>Early ecosystem traction and visibility established</li>
+                                </ul>
+                            </div>
+                        </div>
 
-                                    {/* Mobile: 2-column with icon on left */}
-                                    <div className="md:hidden grid grid-cols-[42px_1fr] gap-3 items-start">
-                                        <div className="flex justify-center pt-6">
-                                            <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center" style={{ background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0.04) 35%, rgba(0,0,0,0.10) 100%)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: 'inset 0 0 24px rgba(255,255,255,0.03), 0 12px 30px rgba(0,0,0,0.25)' }}>
-                                                <PawIcon size={22} />
-                                            </div>
-                                        </div>
-                                        <ContentCard phase={stage.phase} title={stage.title} description={stage.description} items={stage.items} badges={stage.badges} />
-                                    </div>
+                        <div className="fp-stage fp-left">
+                            <div className="fp-content">
+                                <div className="fp-time">Phase 3 · Momentum</div>
+                                <ul>
+                                    <li>Beta users fully onboarded</li>
+                                    <li>Performance improvements completed</li>
+                                    <li>Partnerships and integrations expanded</li>
+                                </ul>
+                            </div>
+                            <div className="fp-icon"><div className="fp-paw"><div className="fp-toe fp-t1"></div><div className="fp-toe fp-t2"></div><div className="fp-toe fp-t3"></div><div className="fp-toe fp-t4"></div><div className="fp-pad"></div></div></div>
+                            <div className="fp-blank"></div>
+                        </div>
+
+                        <div className="fp-stage fp-right">
+                            <div className="fp-blank"></div>
+                            <div className="fp-icon"><div className="fp-paw"><div className="fp-toe fp-t1"></div><div className="fp-toe fp-t2"></div><div className="fp-toe fp-t3"></div><div className="fp-toe fp-t4"></div><div className="fp-pad"></div></div></div>
+                            <div className="fp-content">
+                                <div className="fp-time">Phase 4 · Present</div>
+                                <h3>Second Mining Phase</h3>
+                                <p>Active mining, strong engagement, and ecosystem readiness defining the current stage.</p>
+                                <div className="fp-phase">
+                                    <div className="fp-badge">Active mining</div>
+                                    <div className="fp-badge">Community retention</div>
+                                    <div className="fp-badge">Reward clarity</div>
+                                    <div className="fp-badge">Transparency</div>
                                 </div>
-                            )
-                        })}
+                            </div>
+                        </div>
+
+                        <div className="fp-stage fp-left">
+                            <div className="fp-content">
+                                <div className="fp-time">Phase 5</div>
+                                <ul>
+                                    <li>New utility features introduced</li>
+                                    <li>User growth via targeted campaigns</li>
+                                    <li>Consistent updates and reporting</li>
+                                </ul>
+                            </div>
+                            <div className="fp-icon"><div className="fp-paw"><div className="fp-toe fp-t1"></div><div className="fp-toe fp-t2"></div><div className="fp-toe fp-t3"></div><div className="fp-toe fp-t4"></div><div className="fp-pad"></div></div></div>
+                            <div className="fp-blank"></div>
+                        </div>
+
+                        <div className="fp-stage fp-right">
+                            <div className="fp-blank"></div>
+                            <div className="fp-icon"><div className="fp-paw"><div className="fp-toe fp-t1"></div><div className="fp-toe fp-t2"></div><div className="fp-toe fp-t3"></div><div className="fp-toe fp-t4"></div><div className="fp-pad"></div></div></div>
+                            <div className="fp-content">
+                                <div className="fp-time">Phase 6</div>
+                                <ul>
+                                    <li>Feature reveals and utility tease</li>
+                                    <li>Incentive-driven ecosystem activity</li>
+                                    <li>Liquidity expansion strategy</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="fp-stage fp-left">
+                            <div className="fp-content">
+                                <div className="fp-time">Phase 7</div>
+                                <ul>
+                                    <li>TGE 2 successfully completed</li>
+                                    <li>Broader liquidity and trading access achieved</li>
+                                </ul>
+                            </div>
+                            <div className="fp-icon"><div className="fp-paw"><div className="fp-toe fp-t1"></div><div className="fp-toe fp-t2"></div><div className="fp-toe fp-t3"></div><div className="fp-toe fp-t4"></div><div className="fp-pad"></div></div></div>
+                            <div className="fp-blank"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    )
-}
-
-function ContentCard({ phase, title, description, items, badges }: { phase: string; title: string; description?: string; items: string[]; badges: string[] }) {
-    return (
-        <div className="rounded-[24px] p-5 min-h-[150px]" style={{ background: 'linear-gradient(180deg, rgba(31,41,55,0.96), rgba(15,23,42,0.98))', border: '1px solid rgba(148,163,184,0.14)', boxShadow: '0 14px 40px rgba(0,0,0,0.18)' }}>
-            <div className="inline-flex items-center gap-2 text-[12px] text-[#cbd5e1] tracking-[0.08em] uppercase font-bold mb-2.5">
-                {phase}
-            </div>
-            {title && <h3 className="text-[20px] font-semibold mb-2 mt-1">{title}</h3>}
-            {description && <p className="text-[14px] leading-[1.65] mt-1" style={{ color: '#94a3b8' }}>{description}</p>}
-            {items.length > 0 && (
-                <ul className="mt-2.5 ml-4.5 space-y-1">
-                    {items.map((item, i) => (
-                        <li key={i} className="text-[14px] leading-[1.65]" style={{ color: '#94a3b8' }}>{item}</li>
-                    ))}
-                </ul>
-            )}
-            {badges.length > 0 && (
-                <div className="mt-3 grid grid-cols-2 gap-2.5">
-                    {badges.map((badge, i) => (
-                        <div key={i} className="rounded-[14px] px-3 py-2.5 text-[12px] leading-[1.45]" style={{ background: 'rgba(96,165,250,0.10)', border: '1px solid rgba(96,165,250,0.18)', color: '#dbeafe' }}>
-                            {badge}
-                        </div>
-                    ))}
-                </div>
-            )}
         </div>
     )
 }
