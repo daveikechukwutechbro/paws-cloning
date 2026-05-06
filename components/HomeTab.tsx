@@ -4,7 +4,6 @@ import Wallet from '@/icons/Wallet'
 import PawsLogo from '@/icons/PawsLogo'
 import Community from '@/icons/Community'
 import Star from '@/icons/Star'
-import Image from 'next/image'
 import ArrowRight from '@/icons/ArrowRight'
 import { sparkles } from '@/images'
 import { useState, useEffect, useCallback } from 'react'
@@ -20,6 +19,7 @@ import {
 } from '@/utils/tonService'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
+import { getUserTier, getNextTier, getProgressToNextTier, getEstimatedRank, RANK_TIERS } from '@/utils/rankingSystem'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -46,6 +46,7 @@ const HomeTab = () => {
     const [showBuyMenu, setShowBuyMenu] = useState(false)
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
     const [isClaiming, setIsClaiming] = useState(false)
+    const [showRankModal, setShowRankModal] = useState(false)
     
     const buyPackages = [
         { name: '1,000 PAWS', price: '$1', amount: 1000 },
@@ -144,7 +145,10 @@ const HomeTab = () => {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
     }
 
-    const isNewUser = displayBalance === 50000
+    const currentTier = getUserTier(displayBalance)
+    const nextTier = getNextTier(displayBalance)
+    const tierProgress = getProgressToNextTier(displayBalance)
+    const estimatedRank = getEstimatedRank(displayBalance)
 
     const walletOptions: { key: SupportedWallet; label: string }[] = [
         { key: 'telegram-wallet', label: 'Telegram TON Wallet' },
@@ -270,17 +274,17 @@ const HomeTab = () => {
                     <div className="text-6xl font-bold mb-1">{displayBalance.toLocaleString()}</div>
                     <div className="text-white text-2xl">PAWS</div>
                 </div>
-                <div className="flex items-center gap-1 text-[#868686] rounded-full px-4 py-1.5 mt-2 cursor-pointer">
-                    <span>{isNewUser ? 'NEWCOMER' : 'ACTIVE'}</span>
-                    <Image
-                        src={sparkles}
-                        alt="sparkles"
-                        width={18}
-                        height={18}
-                    />
-                    <span>RANK</span>
-                    <ArrowRight className="w-6 h-6" />
-                </div>
+                <button
+                    onClick={() => setShowRankModal(true)}
+                    className="flex items-center gap-2 rounded-full px-4 py-1.5 mt-2 cursor-pointer transition-colors"
+                    style={{ backgroundColor: currentTier.bgColor }}
+                >
+                    <span style={{ color: currentTier.color, fontWeight: 600 }}>{currentTier.label}</span>
+                    <span style={{ color: currentTier.color }}>·</span>
+                    <span style={{ color: '#868686', fontSize: 13 }}>{estimatedRank}</span>
+                    <span style={{ color: '#868686' }}>RANK</span>
+                    <ArrowRight className="w-5 h-5" style={{ color: currentTier.color }} />
+                </button>
             </div>
 
             <div className="px-4 mt-6">
@@ -382,6 +386,94 @@ const HomeTab = () => {
                     </div>
                 )}
             </div>
+
+            {/* Rank Modal */}
+            {showRankModal && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => setShowRankModal(false)}>
+                    <div className="w-full max-w-md bg-black border-t border-[#2d2d2e] rounded-t-2xl animate-slide-up max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-5 pb-32">
+                            <div className="flex items-center justify-between mb-5">
+                                <h2 className="text-xl font-bold text-[#fefefe]">Your Rank</h2>
+                                <button
+                                    onClick={() => setShowRankModal(false)}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center bg-[#151516] text-[#868686]"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M18 6L6 18M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="text-center mb-6">
+                                <div className="text-5xl mb-2">{currentTier.icon}</div>
+                                <div className="text-2xl font-bold" style={{ color: currentTier.color }}>{currentTier.label}</div>
+                                <div className="text-sm text-[#868686] mt-1">Rank {estimatedRank} · {displayBalance.toLocaleString()} PAWS</div>
+                            </div>
+
+                            {nextTier && (
+                                <div className="bg-[#ffffff0d] border border-[#2d2d2e] rounded-xl p-4 mb-5">
+                                    <div className="flex justify-between text-sm mb-2">
+                                        <span className="text-[#868686]">Progress to {nextTier.label}</span>
+                                        <span style={{ color: nextTier.color, fontWeight: 600 }}>{Math.floor(tierProgress)}%</span>
+                                    </div>
+                                    <div className="w-full bg-[#1f1f20] rounded-full h-2.5">
+                                        <div
+                                            className="h-2.5 rounded-full transition-all duration-500"
+                                            style={{ width: `${tierProgress}%`, backgroundColor: nextTier.color }}
+                                        />
+                                    </div>
+                                    <div className="text-xs text-[#868686] mt-2">
+                                        Need {(nextTier.minBalance - displayBalance).toLocaleString()} more PAWS
+                                    </div>
+                                </div>
+                            )}
+
+                            {!nextTier && (
+                                <div className="bg-[#ffffff0d] border border-[#2d2d2e] rounded-xl p-4 mb-5 text-center">
+                                    <div className="text-lg font-semibold text-[#ffd700]">🏆 Maximum Rank Achieved!</div>
+                                    <div className="text-sm text-[#868686] mt-1">You are a Legend among PAWS holders.</div>
+                                </div>
+                            )}
+
+                            <div className="text-sm font-semibold text-[#fefefe] mb-3">All Ranks</div>
+                            <div className="space-y-2">
+                                {RANK_TIERS.map((tier) => {
+                                    const isCurrentTier = tier.label === currentTier.label
+                                    const isUnlocked = displayBalance >= tier.minBalance
+                                    return (
+                                        <div
+                                            key={tier.label}
+                                            className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${
+                                                isCurrentTier ? 'border-[2px]' : 'border border-[#2d2d2e]'
+                                            }`}
+                                            style={{
+                                                backgroundColor: isCurrentTier ? tier.bgColor : '#151516',
+                                                borderColor: isCurrentTier ? tier.color : undefined
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-xl">{tier.icon}</div>
+                                                <div>
+                                                    <div className="text-sm font-semibold" style={{ color: isUnlocked ? tier.color : '#555' }}>{tier.label}</div>
+                                                    <div className="text-xs text-[#868686]">{tier.usersEstimate}</div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xs text-[#868686]">
+                                                    {tier.minBalance === 0 ? '0' : tier.minBalance.toLocaleString()} PAWS+
+                                                </div>
+                                                {isCurrentTier && (
+                                                    <div className="text-[10px] font-semibold mt-0.5" style={{ color: tier.color }}>CURRENT</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
