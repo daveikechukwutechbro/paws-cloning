@@ -21,6 +21,7 @@ import {
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
 import { getUserTier, getNextTier, getProgressToNextTier, getEstimatedRank, RANK_TIERS } from '@/utils/rankingSystem'
+import TokenomicsModal from '@/components/TokenomicsModal'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -48,6 +49,7 @@ const HomeTab = () => {
     const [showCommunityMenu, setShowCommunityMenu] = useState(false)
     const [isClaiming, setIsClaiming] = useState(false)
     const [showRankModal, setShowRankModal] = useState(false)
+    const [showTokenomics, setShowTokenomics] = useState(false)
     
     const buyPackages = [
         { name: '1,000 PAWS', price: '$1', amount: 1000 },
@@ -342,10 +344,13 @@ const HomeTab = () => {
                     </div>
                 )}
 
-                <button className="w-full bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg px-4 py-2 flex items-center justify-between mt-3">
+                <button
+                    onClick={() => setShowTokenomics(true)}
+                    className="w-full bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg px-4 py-2 flex items-center justify-between mt-3"
+                >
                     <div className="flex items-center gap-3 font-medium">
                         <Star className="w-8 h-8" />
-                        <span>Check your rewards</span>
+                        <span>Tokenomics</span>
                     </div>
                     <ArrowRight className="w-6 h-6 text-gray-400" />
                 </button>
@@ -387,8 +392,10 @@ const HomeTab = () => {
                             ))}
                         </div>
                     </div>
-                )}
-            </div>
+            )}
+
+            {showTokenomics && <TokenomicsModal onClose={() => setShowTokenomics(false)} />}
+        </div>
 
             {/* Rank Modal */}
             {showRankModal && typeof document !== 'undefined' && createPortal(
