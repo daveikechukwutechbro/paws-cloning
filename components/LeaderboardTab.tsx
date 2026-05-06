@@ -29,14 +29,14 @@ const LeaderboardTab = () => {
     }, [user, loading])
 
     const leaderboardData: LeaderboardItem[] = [
-        { wallet: "Pishnahad_Sup", balance: "53,137,490", place: "🥇" },
-        { wallet: "imGet", balance: "52,374,426", place: "🥈" },
-        { wallet: "Esalat", balance: "45,459,702", place: "🥉" },
-        { wallet: "mehranseydi", balance: "42,660,196", place: "#4" },
-        { wallet: "abbas", balance: "34,626,638", place: "#5" },
-        { wallet: "CenterProd", balance: "32,032,520", place: "#6" },
-        { wallet: "tuxeoqt", balance: "31,568,259", place: "#7" },
-        { wallet: "ladesov", balance: "28,707,823", place: "#8" },
+        { wallet: "wats gud my bro", balance: "53,137,490", place: "🥇" },
+        { wallet: "just a lil something", balance: "52,374,426", place: "🥈" },
+        { wallet: "i play around with", balance: "45,459,702", place: "🥉" },
+        { wallet: "just for fun", balance: "42,660,196", place: "#4" },
+        { wallet: "and some blocks", balance: "34,626,638", place: "#5" },
+        { wallet: "just to chill", balance: "32,032,520", place: "#6" },
+        { wallet: "and do", balance: "31,568,259", place: "#7" },
+        { wallet: "whats neccesary", balance: "28,707,823", place: "#8" },
     ]
 
     return (

@@ -96,7 +96,7 @@ const TasksTab = () => {
             icon: taskBlum.src,
             title: 'Join Blum Channel',
             reward: '+ 1,000 PAWS',
-            link: 'https://blum.io' // Update with actual link
+            link: 'https://blum.io'
         }
     ]
 
