@@ -95,7 +95,7 @@ const getMedal = (place: number) => {
 
 const totalUsers = 23_253_686
 
-// Name pools per tier with rotation indices
+// Name pools per tier
 const namePools: Record<string, string[]> = {
     'Newcomer': newcomerNames,
     'Active': activeNames,
@@ -106,39 +106,62 @@ const namePools: Record<string, string[]> = {
     'Legend': legendNames,
 }
 
-function getDynamicUsername(tierLabel: string, indexInTier: number, tick: number): string {
+function getUsernameForTier(tierLabel: string, indexInTier: number, tick: number): string {
     const pool = namePools[tierLabel]
     if (!pool) return 'Unknown'
-    
+
     // Only rotate names for Legend and Elite tiers
-    if (tier.label === 'Legend' || tier.label === 'Elite') {
-        const pool = namePools[tier.label]
-        if (pool) {
-            // Legend: changes every 86400 ticks (~3 days if 3s/tick = 259200s)
-            // Elite: changes every 28800 ticks (~1 day if 3s/tick = 86400s)
-            const speed = tier.label === 'Legend' ? 86400 : 28800
-            const offset = Math.floor(tick / speed) % pool.length
-            username = pool[(indexInTier + offset) % pool.length]
-        } else {
-            username = `User_${index + 1}`
+    if (tierLabel === 'Legend' || tierLabel === 'Elite') {
+        // Legend: changes every 86400 ticks (~3 days if 3s/tick = 259200s)
+        // Elite: changes every 28800 ticks (~1 day if 3s/tick = 86400s)
+        const speed = tierLabel === 'Legend' ? 86400 : 28800
+        const offset = Math.floor(tick / speed) % pool.length
+        return pool[(indexInTier + offset) % pool.length]
+    }
+
+    // Static names for other tiers
+    return pool[indexInTier] || `User_${indexInTier}`
+}
+
+const LeaderboardTab = () => {
+    const { user, loading } = useUser()
+    const [userRank, setUserRank] = useState('#--')
+    const [tick, setTick] = useState(0)
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTick(t => t + 1)
+        }, 3000) // Update every 3 seconds
+        return () => clearInterval(interval)
+    }, [])
+
+    useEffect(() => {
+        if (user && user.balance) {
+            const rank = getEstimatedRank(user.balance)
+            setUserRank(rank)
+        } else if (!loading) {
+            setUserRank('#--')
         }
-    } else {
-                username = `User_${index + 1}`
-            }
-        } else {
-            // Static names for other tiers
-            username = getDynamicUsername(tier.label, indexInTier, tick)
-        }
+    }, [user, loading])
+
+    const currentTier = user ? getUserTier(user.balance || 0) : null
+
+    // Build dynamic leaderboard data
+    const leaderboardData = baseBalances.map((balance, index) => {
+        const tier = getUserTier(balance)
+        const tierStartIndex = baseBalances.findIndex(b => getUserTier(b).label === tier.label)
+        const indexInTier = index - tierStartIndex
+        const username = getUsernameForTier(tier.label, indexInTier, tick)
 
         // Increase balance over time for Legend and Elite (simulate investment)
         let adjustedBalance = balance
         if (tier.label === 'Legend') {
-            // Legends: massive growth every ~3 days (significant investor jumps)
-            const growthMultiplier = 1 + Math.floor(tick / 86400) * 0.15 // +15% every 3 days
+            // Legends: massive growth every ~3 days (+15% per cycle)
+            const growthMultiplier = 1 + Math.floor(tick / 86400) * 0.15
             adjustedBalance = Math.floor(balance * growthMultiplier)
         } else if (tier.label === 'Elite') {
-            // Elite: moderate growth every ~1 day
-            const growthMultiplier = 1 + Math.floor(tick / 28800) * 0.05 // +5% every day
+            // Elite: moderate growth every ~1 day (+5% per cycle)
+            const growthMultiplier = 1 + Math.floor(tick / 28800) * 0.05
             adjustedBalance = Math.floor(balance * growthMultiplier)
         }
 
