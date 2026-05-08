@@ -14,46 +14,98 @@ type LeaderboardItem = {
     medal?: string
 }
 
-// Highly realistic global usernames pool (no repeats)
+// Massive realistic global human name pools (all continents)
+// These are common real names - feels human, not robotic
 const newcomerNames = [
-    'CryptoNewbie_X', 'JustJoinedTG', 'PAWS_Fresh', 'FirstTimer_24', 'StartedToday',
-    'MiniApp_Lover', 'TG_Gamer_01', 'TokenClicker', 'NewMiner_2025', 'PAWS_Beginner',
-    'WeekendMiner', 'DailyVisitor', 'CryptoRookie', 'StartedNow_TG', 'PAWS_Newbie',
-    'FirstTime_X', 'TokenFan_2025', 'TG_NewUser', 'PAWS_Started', 'CryptoStarter',
-    'JustHere_TG', 'Miner_New', 'PAWS_Spark', 'CryptoBaby_X', 'TG_FreshStart',
-    'AirdropNew', 'PAWS_Zero', 'CryptoDawn', 'TG_JustIn', 'Miner_FirstDay',
-    'PAWS_Infant', 'TokenNewb', 'CryptoHatch', 'TG_BlankSlate', 'PAWS_Sprout',
-    'NewFaucet', 'Miner_Zero', 'CryptoNovice', 'TG_Unboxing', 'PAWS_Origin',
-    'FreshStart_X', 'CryptoInit', 'TG_NewBlood', 'PAWS_Genesis', 'Miner_Birth',
+    // English/Western
+    'James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth',
+    'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen',
+    'Christopher', 'Nancy', 'Daniel', 'Lisa', 'Matthew', 'Betty', 'Anthony', 'Helen', 'Mark', 'Sandra',
+    'Donald', 'Donna', 'Steven', 'Carol', 'Paul', 'Ruth', 'Andrew', 'Sharon', 'Joshua', 'Michelle',
+    'Kenneth', 'Laura', 'Kevin', 'Sarah', 'Brian', 'Kimberly', 'George', 'Deborah', 'Edward', 'Dorothy',
+    'Ronald', 'Lisa', 'Timothy', 'Nancy', 'Jason', 'Karen', 'Jeffrey', 'Betty', 'Ryan', 'Helen',
+    // African
+    'Kwame', 'Amara', 'Chidi', 'Zainab', 'Tunde', 'Fatima', 'Oluwaseun', 'Aisha', 'Kofi', 'Nia',
+    'Mandla', 'Zola', 'Sipho', 'Thandi', 'Juma', 'Hassan', 'Omar', 'Amina', 'Emeka', 'Chioma',
+    'Bakari', 'Dalia', 'Femi', 'Grace', 'Ibrahim', 'Hawa', 'Jelani', 'Kesi', 'Lekan', 'Makena',
+    // Asian
+    'Wei', 'Yuki', 'Raj', 'Sunita', 'Min', 'Hana', 'Arjun', 'Priya', 'Chen', 'Mei',
+    'Hiroshi', 'Sakura', 'Vikram', 'Anjali', 'Takeshi', 'Yuna', 'Sanjay', 'Deepa', 'Kenji', 'Rina',
+    'Li', 'Xia', 'Rahul', 'Neha', 'Zhang', 'Jing', 'Amit', 'Pooja', 'Tanaka', 'Yui',
+    // European
+    'Hans', 'Greta', 'Pierre', 'Marie', 'Giovanni', 'Sophia', 'Lars', 'Ingrid', 'Mateo', 'Carmen',
+    'Franz', 'Klaus', 'Heidi', 'Luca', 'Isabella', 'Niklas', 'Elena', 'Dmitri', 'Svetlana', 'Ivan',
+    'Andrei', 'Katya', 'Sven', 'Freya', 'Marco', 'Giulia', 'Anton', 'Natasha', 'Hugo', 'Clara',
+    // Latin American
+    'Santiago', 'Valentina', 'Mateo', 'Camila', 'Diego', 'Sofia', 'Miguel', 'Isabella', 'Javier', 'Lucia',
+    'Carlos', 'Gabriela', 'Luis', 'Daniela', 'Jose', 'Mariana', 'Fernando', 'Alejandra', 'Ricardo', 'Valeria',
+    'Andres', 'Paula', 'Sebastian', 'Martina', 'Nicolas', 'Emilia', 'Pablo', 'Jimena', 'Hector', 'Renata',
+    // Middle Eastern
+    'Ahmed', 'Fatima', 'Omar', 'Layla', 'Ali', 'Zahra', 'Hassan', 'Noor', 'Khalid', 'Amina',
+    'Tariq', 'Yasmin', 'Samir', 'Leila', 'Rashid', 'Samira', 'Faisal', 'Hoda', 'Bassem', 'Rania',
+    'Karim', 'Dalia', 'Zaid', 'Maya', 'Ibrahim', 'Nour', 'Hamid', 'Jamila', 'Saeed', 'Lina',
 ]
 
 const activeNames = [
-    'TG_Player_X', 'PAWS_Active', 'DailyMiner_24', 'CryptoGrind', 'TokenHunter',
-    'TG_Regular', 'PAWS_Daily', 'Miner_Pro', 'CryptoFan_2025', 'TokenFarm_X',
-    'TG_Devoted', 'PAWS_Streak', 'Miner_Master', 'CryptoBae', 'TokenGuru',
-    'TG_Loyal', 'PAWS_Warrior', 'Miner_Elite', 'CryptoKing_X', 'TokenLord',
-    'TG_Titan', 'PAWS_Champ', 'Miner_Legend', 'CryptoGod_24', 'TokenSaint',
-    'TG_Phoenix', 'PAWS_Dragon', 'Miner_Storm', 'CryptoFlash', 'TokenBlaze',
-    'TG_Viper', 'PAWS_Raven', 'Miner_Falcon', 'CryptoApex', 'TokenPrime',
-    'TG_Shadow', 'PAWS_Ghost', 'Miner_Stealth', 'CryptoNeon', 'TokenFlux',
+    // English/Western
+    'Alexander', 'Emma', 'Benjamin', 'Olivia', 'Samuel', 'Sophia', 'Henry', 'Ava', 'Jackson', 'Isabella',
+    'Sebastian', 'Mia', 'Jack', 'Charlotte', 'Owen', 'Amelia', 'Theodore', 'Harper', 'Aiden', 'Evelyn',
+    'Elijah', 'Abigail', 'Levi', 'Emily', 'Isaac', 'Elizabeth', 'Lincoln', 'Mila', 'Hudson', 'Ella',
+    'Grayson', 'Avery', 'Nathan', 'Scarlett', 'Caleb', 'Madison', 'Mason', 'Lily', 'Leo', 'Chloe',
+    'Julian', 'Layla', 'Lucas', 'Riley', 'Miles', 'Nora', 'Ezra', 'Hazel', 'Silas', 'Ellie',
+    // African
+    'Chinedu', 'Ngozi', 'Kwesi', 'Abena', 'Obi', 'Nneka', 'Babatunde', 'Folake', 'Oladipo', 'Yetunde',
+    'Chukwu', 'Adaeze', 'Ndidi', 'Obinna', 'Uche', 'Nkechi', 'Tayo', 'Bisola', 'Segun', 'Ronke',
+    'Musa', 'Zainab', 'Kwame', 'Akosua', 'Kojo', 'Ama', 'Yaw', 'Adwoa', 'Kofi', 'Efua',
+    // Asian
+    'Rohan', 'Ananya', 'Vikram', 'Divya', 'Arnav', 'Kavya', 'Aditya', 'Shreya', 'Karan', 'Riya',
+    'Hiro', 'Aoi', 'Ren', 'Yui', 'Daiki', 'Hina', 'Kaito', 'Mio', 'Sora', 'Nanami',
+    'Jun', 'Minji', 'Tae', 'Eunji', 'Jin', 'Soo', 'Minho', 'Jisoo', 'Dong', 'Hyerin',
+    // European
+    'Bjorn', 'Astrid', 'Erik', 'Sigrid', 'Lars', 'Maja', 'Oskar', 'Linnea', 'Felix', 'Emilia',
+    'Viktor', 'Anastasia', 'Igor', 'Olga', 'Pavel', 'Tatiana', 'Mikhail', 'Svetlana', 'Dmitry', 'Irina',
+    'Hans', 'Lotte', 'Pieter', 'Mieke', 'Lukas', 'Anna', 'Matthias', 'Julia', 'Stefan', 'Eva',
+    // Latin American
+    'Agustin', 'Martina', 'Benicio', 'Renata', 'Ciro', 'Julieta', 'Dario', 'Santino', 'Guadalupe', 'Thiago',
+    'Bautista', 'Alma', 'Lautaro', 'Regina', 'Joaquin', 'Elena', 'Bruno', 'Aitana', 'Gael', 'Vera',
+    'Leonardo', 'Monserrat', 'Emiliano', 'Jimena', 'Maximiliano', 'Ximena', 'Iker', 'Mariana', 'Rodrigo', 'Daniela',
+    // Middle Eastern
+    'Yusuf', 'Maryam', 'Abdullah', 'Aisha', 'Hussein', 'Zainab', 'Tariq', 'Leila', 'Walid', 'Rana',
+    'Bilal', 'Huda', 'Samir', 'Dina', 'Rami', 'Nadia', 'Ziad', 'Hala', 'Fadi', 'Rima',
+    'Imad', 'Sana', 'Bashar', 'Alia', 'Mazen', 'Rania', 'Nabil', 'Hanan', 'Rafiq', 'Najwa',
 ]
 
 const trustedNames = [
-    'PAWS OG Hunter', 'TG_PowerUser', 'CryptoDemon', 'TokenWizard_X', 'Miner_Shadow',
-    'PAWS_Enthusiast', 'TG_Legendary', 'CryptoPhoenix', 'TokenTitan', 'Miner_Inferno',
-    'PAWS_Overlord', 'TG_Warlod', 'CryptoEmperor', 'TokenDeity', 'Miner_Celestial',
-    'PAWS_Archon', 'TG_GrandMaster', 'CryptoImmortal', 'TokenAlmighty', 'Miner_Oracle',
-    'PAWS_Sentinel', 'TG_Vanguard', 'CryptoGuardian', 'TokenKeeper', 'Miner_Aegis',
-    'PAWS_Protector', 'TG_Defender', 'CryptoShield', 'TokenWatch', 'Miner_Valor',
-    'PAWS_Knight', 'TG_Paladin', 'CryptoBastion', 'TokenFortress', 'Miner_Stronghold',
-    'PAWS_Champion', 'TG_Hero', 'CryptoLegend', 'TokenMythic', 'Miner_Epic',
+    'Jonathan', 'Rebecca', 'Becky', 'Jude', 'Bathrod', 'Nathaniel', 'Catherine', 'Zachary', 'Victoria', 'Gabriel',
+    'Samantha', 'Benjamin', 'Audrey', 'Dominic', 'Penelope', 'Elijah', 'Claire', 'Julian', 'Lydia', 'Adrian',
+    'Margaret', 'Isaac', 'Diana', 'Cameron', 'Grace', 'Evan', 'Hannah', 'Oliver', 'Sophie', 'Liam',
+    'Chloe', 'Noah', 'Ava', 'Ethan', 'Mia', 'Lucas', 'Charlotte', 'Mason', 'Amelia', 'Logan',
+    'Harper', 'Ella', 'Aiden', 'Scarlett', 'Jackson', 'Lily', 'Sebastian', 'Riley', 'Jack', 'Nora',
+    'Henry', 'Hazel', 'Levi', 'Ellie', 'Miles', 'Abigail', 'Caleb', 'Emily', 'Grayson', 'Elizabeth',
+    'Theodore', 'Mila', 'Hudson', 'Evelyn', 'Owen', 'Avery', 'Samuel', 'Madison', 'Joseph', 'Layla',
+    'David', 'Aria', 'Daniel', 'Elena', 'Matthew', 'Sofia', 'Anthony', 'Aurora', 'Andrew', 'Natalie',
+    'Joshua', 'Brooklyn', 'Christopher', 'Leah', 'John', 'Savannah', 'James', 'Blake', 'Robert', 'Lucy',
+    'Thomas', 'Paisley', 'Charles', 'Addison', 'William', 'Stella', 'Joseph', 'Genesis', 'Richard', 'Violet',
+    'Kwame', 'Amara', 'Chidi', 'Zainab', 'Tunde', 'Fatima', 'Oluwaseun', 'Aisha', 'Kofi', 'Nia',
+    'Mandla', 'Zola', 'Sipho', 'Thandi', 'Juma', 'Hassan', 'Omar', 'Amina', 'Emeka', 'Chioma',
+    'Bakari', 'Dalia', 'Femi', 'Grace', 'Ibrahim', 'Hawa', 'Jelani', 'Kesi', 'Lekan', 'Makena',
+    'Wei', 'Yuki', 'Raj', 'Sunita', 'Min', 'Hana', 'Arjun', 'Priya', 'Chen', 'Mei',
+    'Hiroshi', 'Sakura', 'Vikram', 'Anjali', 'Takeshi', 'Yuna', 'Sanjay', 'Deepa', 'Kenji', 'Rina',
+    'Santiago', 'Valentina', 'Mateo', 'Camila', 'Diego', 'Sofia', 'Miguel', 'Isabella', 'Javier', 'Lucia',
+    'Ahmed', 'Fatima', 'Omar', 'Layla', 'Ali', 'Zahra', 'Hassan', 'Noor', 'Khalid', 'Amina',
 ]
 
 const influencerNames = [
-    'ReferralKing_24', 'PAWS_Maximalist', 'CryptoWhale_Pro', 'TokenCollector', 'Miner_Mogul',
-    'PAWS_Godfather', 'TG_Influencer_X', 'CryptoTitan_24', 'TokenBaron', 'Miner_Prince',
-    'PAWS_Duke', 'TG_Earl', 'CryptoMarquis', 'TokenShah', 'Miner_King',
-    'PAWS_Emperor', 'TG_Caesar', 'CryptoSultan', 'TokenPharaoh', 'Miner_Tsar',
+    'CryptoKing', 'PAWS_Maximalist', 'TokenCollector', 'Miner_Mogul', 'PAWS_Godfather',
+    'TG_Influencer', 'CryptoTitan', 'TokenBaron', 'Miner_Prince', 'PAWS_Duke',
+    'TG_Earl', 'CryptoMarquis', 'TokenShah', 'Miner_King', 'PAWS_Emperor',
+    'TG_Caesar', 'CryptoSultan', 'TokenPharaoh', 'Miner_Tsar', 'PAWS_Sovereign',
+    'TG_Magnate', 'CryptoBaron', 'TokenDuke', 'Miner_Earl', 'PAWS_Lord',
+    'TG_Baron', 'CryptoCount', 'TokenViscount', 'Miner_Baron', 'PAWS_Viscount',
+    'TG_Knight', 'CryptoEsquire', 'TokenLord', 'Miner_Sir', 'PAWS_Noble',
+    'TG_Prime', 'CryptoRoyal', 'TokenCrown', 'Miner_Regal', 'PAWS_Majesty',
+    'TG_Supreme', 'CryptoElite', 'TokenPrime', 'Miner_Alpha', 'PAWS_Omega',
+    'TG_Apex', 'CryptoZenith', 'TokenPeak', 'Miner_Summit', 'PAWS_Pinnacle',
 ]
 
 const whaleNames = [
@@ -61,6 +113,10 @@ const whaleNames = [
     'PAWS_Legend', 'EarlyBird_TG', 'WhaleWatcher', 'CryptoNomad', 'DailyMiner_Pro',
     'PAWS_Whale_X', 'TG_CryptoGod', 'TokenShark', 'Miner_Orca', 'PAWS_Leviathan',
     'CryptoKraken', 'TG_BlueWhale', 'TokenHumpback', 'Miner_Sperm', 'PAWS_Right',
+    'CryptoMammoth', 'TG_Giant', 'TokenTitan', 'Miner_Colossus', 'PAWS_Goliath',
+    'CryptoJuggernaut', 'TG_Behemoth', 'TokenMonster', 'Miner_Alpha', 'PAWS_Omega',
+    'CryptoSupreme', 'TG_Ultra', 'TokenMega', 'Miner_Giga', 'PAWS_Tera',
+    'CryptoInfinite', 'TG_Eternal', 'TokenBoundless', 'Miner_Endless', 'PAWS_Vast',
 ]
 
 const eliteNames = [
@@ -99,7 +155,7 @@ const getMedal = (place: number) => {
 
 const totalUsers = 23_253_686
 
-// Name pools per tier (MUST match labels in rankingSystem.ts exactly)
+// Name pools per tier
 const namePools: Record<string, string[]> = {
     'Newcomer': newcomerNames,
     'Active': activeNames,
@@ -110,53 +166,84 @@ const namePools: Record<string, string[]> = {
     'Legend': legendNames,
 }
 
-// Deterministic shuffle for constant name pools (Elite/Legend)
-const deterministicShuffle = (arr: string[], seed: number) => {
+// Seeded PRNG (Mulberry32) - deterministic but feels random
+function mulberry32(seed: number) {
+    return function() {
+        let t = seed += 0x6D2B79F5
+        t = Math.imul(t ^ t >>> 15, t | 1)
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61)
+        return ((t ^ t >>> 14) >>> 0) / 4294967296
+    }
+}
+
+// Deterministic shuffle using seed
+function seededShuffle(arr: string[], seed: number) {
     const shuffled = [...arr]
+    const rng = mulberry32(seed)
     for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = (seed + i) % (i + 1)
+        const j = Math.floor(rng() * (i + 1))
         ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
     return shuffled
 }
 
-function getUsernameForTier(tierLabel: string, indexInTier: number, tick: number): string {
+// Get a "time window" key that shifts based on real time, not tick state
+// This ensures continuity across app restarts
+function getTimeWindow(intervalSeconds: number): number {
+    return Math.floor(Date.now() / 1000 / intervalSeconds)
+}
+
+function getUsernameForTier(tierLabel: string, indexInTier: number, timeWindows: Record<string, number>): string {
     const pool = namePools[tierLabel]
     if (!pool) return 'Unknown'
 
     // Elite & Legend: constant name pools, only shuffle positions periodically
-    // Offset Legend by half its interval (1.5 days) so they don't shuffle simultaneously
+    // Offset Legend by half its interval so they don't shuffle simultaneously
     if (tierLabel === 'Elite' || tierLabel === 'Legend') {
-        const interval = tierLabel === 'Elite' ? 28800 : 86400 // 1 day / 3 days
-        const offset = tierLabel === 'Legend' ? 43200 : 0 // Half of Legend's interval
-        const cycle = Math.floor((tick + offset) / interval)
-        const shuffledPool = deterministicShuffle(pool, cycle)
+        const interval = tierLabel === 'Elite' ? 86400 : 259200 // 1 day / 3 days (in seconds)
+        const offset = tierLabel === 'Legend' ? 129600 : 0 // Half of Legend's interval
+        const windowKey = Math.floor((Date.now() / 1000 + offset) / interval)
+        const shuffledPool = seededShuffle(pool, windowKey)
         return shuffledPool[indexInTier % shuffledPool.length]
     }
 
-    // Lower tiers: rotate names with no repetition (faster as tier decreases)
-    const rotationSpeeds: Record<string, number> = {
-        'Newcomer': 1,    // Every 3s
-        'Active': 2,      // Every 6s
-        'Trusted': 4,     // Every 12s
-        'Influencer': 6,  // Every 18s
-        'Whale': 8,       // Every 24s
+    // Lower tiers: rotate names continuously using real time
+    // The window changes at different rates per tier, creating organic feel
+    const tierIntervals: Record<string, number> = {
+        'Newcomer': 3,     // Every 3 seconds
+        'Active': 6,       // Every 6 seconds
+        'Trusted': 12,     // Every 12 seconds
+        'Influencer': 18,  // Every 18 seconds
+        'Whale': 24,       // Every 24 seconds
     }
 
-    const speed = rotationSpeeds[tierLabel] || 1
-    const offset = Math.floor(tick / speed) % pool.length
-    return pool[(indexInTier + offset) % pool.length]
+    const interval = tierIntervals[tierLabel] || 3
+    const windowKey = Math.floor(Date.now() / 1000 / interval)
+    // Use indexInTier + windowKey to get different name per position
+    const shuffledPool = seededShuffle(pool, windowKey)
+    return shuffledPool[indexInTier % shuffledPool.length]
 }
 
 const LeaderboardTab = () => {
     const { user, loading } = useUser()
     const [userRank, setUserRank] = useState('#--')
-    const [tick, setTick] = useState(0)
+    const [timeWindows, setTimeWindows] = useState<Record<string, number>>({})
 
+    // Update time windows every 3 seconds to trigger re-renders
     useEffect(() => {
-        const interval = setInterval(() => {
-            setTick(t => t + 1)
-        }, 3000) // Update every 3 seconds
+        const updateWindows = () => {
+            setTimeWindows({
+                Newcomer: getTimeWindow(3),
+                Active: getTimeWindow(6),
+                Trusted: getTimeWindow(12),
+                Influencer: getTimeWindow(18),
+                Whale: getTimeWindow(24),
+                Elite: getTimeWindow(86400),
+                Legend: getTimeWindow(259200),
+            })
+        }
+        updateWindows()
+        const interval = setInterval(updateWindows, 3000)
         return () => clearInterval(interval)
     }, [])
 
@@ -176,34 +263,35 @@ const LeaderboardTab = () => {
         const tier = getUserTier(balance)
         const tierStartIndex = baseBalances.findIndex(b => getUserTier(b).label === tier.label)
         const indexInTier = index - tierStartIndex
-        const username = getUsernameForTier(tier.label, indexInTier, tick)
+        const username = getUsernameForTier(tier.label, indexInTier, timeWindows)
 
         // Balance logic per tier
         let adjustedBalance = balance
+
         if (tier.label === 'Newcomer') {
-            // Newcomer: static balance (same for all new users)
+            // Newcomer: static base balance (same for all new users)
             adjustedBalance = balance
         } else if (tier.label === 'Active' || tier.label === 'Trusted' || tier.label === 'Influencer' || tier.label === 'Whale') {
-            // These tiers: balances always changing (organic, non-ascending, like earning at different split seconds)
-            // Use tick + index for pseudo-random fluctuations at different intervals per tier
-            const tierIntervals: Record<string, number> = {
-                'Active': 1,      // Changes every 3s
-                'Trusted': 2,     // Changes every 6s
-                'Influencer': 4,  // Changes every 12s
-                'Whale': 6,       // Changes every 18s
-            }
-            const interval = tierIntervals[tier.label] || 1
-            const seed = (tick / interval) + index // Different timing per user
-            const fluctuation = Math.sin(seed * 0.7 + index * 1.3) * 0.02 // ±2% fluctuation
-            const randomGrowth = Math.sin(seed * 0.3 + index * 2.1) * 0.01 // ±1% random drift
-            adjustedBalance = Math.floor(balance * (1 + fluctuation + randomGrowth))
+            // These tiers: balances always changing organically (like earning at different split seconds)
+            // Use real time + index for pseudo-random fluctuations
+            const now = Date.now() / 1000
+            const tierSpeed = tier.label === 'Active' ? 1 : tier.label === 'Trusted' ? 0.7 : tier.label === 'Influencer' ? 0.5 : 0.3
+            const timeFactor = now * tierSpeed + index * 3.14159
+            // Organic-looking fluctuation: ±3-5% with different phases per person
+            const wave1 = Math.sin(timeFactor * 0.5) * 0.02
+            const wave2 = Math.sin(timeFactor * 1.3 + index) * 0.015
+            const wave3 = Math.sin(timeFactor * 2.7 + index * 0.7) * 0.01
+            const fluctuation = wave1 + wave2 + wave3
+            adjustedBalance = Math.floor(balance * (1 + fluctuation))
         } else if (tier.label === 'Elite') {
             // Elite: moderate growth every ~3 days (+10% per cycle)
-            const growthMultiplier = 1 + Math.floor(tick / 86400) * 0.10
+            const daysSinceEpoch = Math.floor(Date.now() / 86400000)
+            const growthMultiplier = 1 + Math.floor(daysSinceEpoch / 3) * 0.10
             adjustedBalance = Math.floor(balance * growthMultiplier)
         } else if (tier.label === 'Legend') {
             // Legends: massive growth every ~7 days (+15% per cycle)
-            const growthMultiplier = 1 + Math.floor(tick / 201600) * 0.15
+            const daysSinceEpoch = Math.floor(Date.now() / 86400000)
+            const growthMultiplier = 1 + Math.floor(daysSinceEpoch / 7) * 0.15
             adjustedBalance = Math.floor(balance * growthMultiplier)
         }
 
