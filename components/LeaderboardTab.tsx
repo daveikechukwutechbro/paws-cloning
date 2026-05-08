@@ -43,6 +43,10 @@ const trustedNames = [
     'PAWS_Enthusiast', 'TG_Legendary', 'CryptoPhoenix', 'TokenTitan', 'Miner_Inferno',
     'PAWS_Overlord', 'TG_Warlod', 'CryptoEmperor', 'TokenDeity', 'Miner_Celestial',
     'PAWS_Archon', 'TG_GrandMaster', 'CryptoImmortal', 'TokenAlmighty', 'Miner_Oracle',
+    'PAWS_Sentinel', 'TG_Vanguard', 'CryptoGuardian', 'TokenKeeper', 'Miner_Aegis',
+    'PAWS_Protector', 'TG_Defender', 'CryptoShield', 'TokenWatch', 'Miner_Valor',
+    'PAWS_Knight', 'TG_Paladin', 'CryptoBastion', 'TokenFortress', 'Miner_Stronghold',
+    'PAWS_Champion', 'TG_Hero', 'CryptoLegend', 'TokenMythic', 'Miner_Epic',
 ]
 
 const influencerNames = [
@@ -174,35 +178,32 @@ const LeaderboardTab = () => {
         const indexInTier = index - tierStartIndex
         const username = getUsernameForTier(tier.label, indexInTier, tick)
 
-        // Increase balance over time (slower as tier increases)
+        // Balance logic per tier
         let adjustedBalance = balance
-        if (tier.label === 'Legend') {
-            // Legends: massive growth every ~7 days (+15% per cycle)
-            const growthMultiplier = 1 + Math.floor(tick / 201600) * 0.15
-            adjustedBalance = Math.floor(balance * growthMultiplier)
+        if (tier.label === 'Newcomer') {
+            // Newcomer: static balance (same for all new users)
+            adjustedBalance = balance
+        } else if (tier.label === 'Active' || tier.label === 'Trusted' || tier.label === 'Influencer' || tier.label === 'Whale') {
+            // These tiers: balances always changing (organic, non-ascending, like earning at different split seconds)
+            // Use tick + index for pseudo-random fluctuations at different intervals per tier
+            const tierIntervals: Record<string, number> = {
+                'Active': 1,      // Changes every 3s
+                'Trusted': 2,     // Changes every 6s
+                'Influencer': 4,  // Changes every 12s
+                'Whale': 6,       // Changes every 18s
+            }
+            const interval = tierIntervals[tier.label] || 1
+            const seed = (tick / interval) + index // Different timing per user
+            const fluctuation = Math.sin(seed * 0.7 + index * 1.3) * 0.02 // ±2% fluctuation
+            const randomGrowth = Math.sin(seed * 0.3 + index * 2.1) * 0.01 // ±1% random drift
+            adjustedBalance = Math.floor(balance * (1 + fluctuation + randomGrowth))
         } else if (tier.label === 'Elite') {
             // Elite: moderate growth every ~3 days (+10% per cycle)
             const growthMultiplier = 1 + Math.floor(tick / 86400) * 0.10
             adjustedBalance = Math.floor(balance * growthMultiplier)
-        } else if (tier.label === 'Whale') {
-            // Whales: steady growth every ~1 day (+5% per cycle)
-            const growthMultiplier = 1 + Math.floor(tick / 28800) * 0.05
-            adjustedBalance = Math.floor(balance * growthMultiplier)
-        } else if (tier.label === 'Influencer') {
-            // Influencers: growth every ~12 hours (+3% per cycle)
-            const growthMultiplier = 1 + Math.floor(tick / 14400) * 0.03
-            adjustedBalance = Math.floor(balance * growthMultiplier)
-        } else if (tier.label === 'Trusted') {
-            // Trusted: growth every ~6 hours (+2% per cycle)
-            const growthMultiplier = 1 + Math.floor(tick / 7200) * 0.02
-            adjustedBalance = Math.floor(balance * growthMultiplier)
-        } else if (tier.label === 'Active') {
-            // Active: small growth every ~3 hours (+1% per cycle)
-            const growthMultiplier = 1 + Math.floor(tick / 3600) * 0.01
-            adjustedBalance = Math.floor(balance * growthMultiplier)
-        } else if (tier.label === 'Newcomer') {
-            // Newcomer: fastest growth every ~1 hour (+0.5% per cycle)
-            const growthMultiplier = 1 + Math.floor(tick / 1200) * 0.005
+        } else if (tier.label === 'Legend') {
+            // Legends: massive growth every ~7 days (+15% per cycle)
+            const growthMultiplier = 1 + Math.floor(tick / 201600) * 0.15
             adjustedBalance = Math.floor(balance * growthMultiplier)
         }
 
