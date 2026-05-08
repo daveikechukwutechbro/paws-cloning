@@ -64,6 +64,10 @@ const totalSupply = '100,000,000,000'
 
 const TokenomicsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
+    const [activeTGE, setActiveTGE] = useState<'tge1' | 'tge2'>('tge1')
+
+    const tge1Done = 53
+    const tge2Pending = 47
 
     const donutSegments = tokenomicsData.map((cat) => {
         const radius = 70
@@ -87,11 +91,34 @@ const TokenomicsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         </button>
                     </div>
 
-                    <div className="text-center mb-6">
-                        <div className="text-xs text-[#868686] uppercase tracking-wider">Total Supply</div>
-                        <div className="text-2xl font-bold text-[#fefefe] mt-1">{totalSupply}</div>
-                        <div className="text-sm text-[#4c9ce2]">PAWS Token</div>
+                <div className="text-center mb-6">
+                    <div className="text-xs text-[#868686] uppercase tracking-wider">Total Supply</div>
+                    <div className="text-2xl font-bold text-[#fefefe] mt-1">{totalSupply}</div>
+                    <div className="text-sm text-[#4c9ce2]">PAWS Token</div>
+
+                    {/* TGE Tabs */}
+                    <div className="flex gap-2 mt-4 justify-center">
+                        <button
+                            onClick={() => setActiveTGE('tge1')}
+                            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${
+                                activeTGE === 'tge1' ? 'bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/30' : 'bg-[#151516] text-[#868686] border border-[#2d2d2e]'
+                            }`}
+                        >
+                            ✅ TGE 1 — 53B Done
+                        </button>
+                        <button
+                            onClick={() => setActiveTGE('tge2')}
+                            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${
+                                activeTGE === 'tge2' ? 'bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/30' : 'bg-[#151516] text-[#868686] border border-[#2d2d2e]'
+                            }`}
+                        >
+                            🪂 TGE 2 — 47B Coming
+                        </button>
                     </div>
+                    <div className="text-xs text-[#868686] mt-2">
+                        {activeTGE === 'tge1' ? '53B PAWS distributed • Community + Airdrop focus' : '47B PAWS pending • Liquidity + CEX listings'}
+                    </div>
+                </div>
 
                     {/* Donut Chart */}
                     <div className="flex justify-center mb-6">
