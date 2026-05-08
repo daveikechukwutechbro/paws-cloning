@@ -96,27 +96,27 @@ const trustedNames = [
 ]
 
 const influencerNames = [
-    'CryptoKing', 'PAWS_Maximalist', 'TokenCollector', 'Miner_Mogul', 'PAWS_Godfather',
-    'TG_Influencer', 'CryptoTitan', 'TokenBaron', 'Miner_Prince', 'PAWS_Duke',
-    'TG_Earl', 'CryptoMarquis', 'TokenShah', 'Miner_King', 'PAWS_Emperor',
-    'TG_Caesar', 'CryptoSultan', 'TokenPharaoh', 'Miner_Tsar', 'PAWS_Sovereign',
-    'TG_Magnate', 'CryptoBaron', 'TokenDuke', 'Miner_Earl', 'PAWS_Lord',
-    'TG_Baron', 'CryptoCount', 'TokenViscount', 'Miner_Baron', 'PAWS_Viscount',
-    'TG_Knight', 'CryptoEsquire', 'TokenLord', 'Miner_Sir', 'PAWS_Noble',
-    'TG_Prime', 'CryptoRoyal', 'TokenCrown', 'Miner_Regal', 'PAWS_Majesty',
-    'TG_Supreme', 'CryptoElite', 'TokenPrime', 'Miner_Alpha', 'PAWS_Omega',
-    'TG_Apex', 'CryptoZenith', 'TokenPeak', 'Miner_Summit', 'PAWS_Pinnacle',
+    'CryptoKing', 'Maximalist', 'TokenCollector', 'Miner_Mogul', 'Godfather',
+    'TG_Influencer', 'CryptoTitan', 'TokenBaron', 'Miner_Prince', 'Duke',
+    'TG_Earl', 'CryptoMarquis', 'TokenShah', 'Miner_King', 'Emperor',
+    'TG_Caesar', 'CryptoSultan', 'TokenPharaoh', 'Miner_Tsar', 'Sovereign',
+    'TG_Magnate', 'CryptoBaron', 'TokenDuke', 'Miner_Earl', 'Lord',
+    'TG_Baron', 'CryptoCount', 'TokenViscount', 'Miner_Baron', 'Viscount',
+    'TG_Knight', 'CryptoEsquire', 'TokenLord', 'Miner_Sir', 'Noble',
+    'TG_Prime', 'CryptoRoyal', 'TokenCrown', 'Miner_Regal', 'Majesty',
+    'TG_Supreme', 'CryptoElite', 'TokenPrime', 'Miner_Alpha', 'Omega',
+    'TG_Apex', 'CryptoZenith', 'TokenPeak', 'Miner_Summit', 'Pinnacle',
 ]
 
 const whaleNames = [
-    'CryptoWhale_2024', 'PAWS_OG_Hunter', 'DiamondHands_ETH', 'TON_Believer', 'MegaMiner_99',
-    'PAWS_Legend', 'EarlyBird_TG', 'WhaleWatcher', 'CryptoNomad', 'DailyMiner_Pro',
-    'PAWS_Whale_X', 'TG_CryptoGod', 'TokenShark', 'Miner_Orca', 'PAWS_Leviathan',
-    'CryptoKraken', 'TG_BlueWhale', 'TokenHumpback', 'Miner_Sperm', 'PAWS_Right',
-    'CryptoMammoth', 'TG_Giant', 'TokenTitan', 'Miner_Colossus', 'PAWS_Goliath',
-    'CryptoJuggernaut', 'TG_Behemoth', 'TokenMonster', 'Miner_Alpha', 'PAWS_Omega',
-    'CryptoSupreme', 'TG_Ultra', 'TokenMega', 'Miner_Giga', 'PAWS_Tera',
-    'CryptoInfinite', 'TG_Eternal', 'TokenBoundless', 'Miner_Endless', 'PAWS_Vast',
+    'CryptoWhale_2024', 'OG_Hunter', 'DiamondHands_ETH', 'TON_Believer', 'MegaMiner_99',
+    'Legend', 'EarlyBird_TG', 'WhaleWatcher', 'CryptoNomad', 'DailyMiner_Pro',
+    'Whale_X', 'TG_CryptoGod', 'TokenShark', 'Miner_Orca', 'Leviathan',
+    'CryptoKraken', 'TG_BlueWhale', 'TokenHumpback', 'Miner_Sperm', 'Right',
+    'CryptoMammoth', 'TG_Giant', 'TokenTitan', 'Miner_Colossus', 'Goliath',
+    'CryptoJuggernaut', 'TG_Behemoth', 'TokenMonster', 'Miner_Alpha', 'Omega',
+    'CryptoSupreme', 'TG_Ultra', 'TokenMega', 'Miner_Giga', 'Tera',
+    'CryptoInfinite', 'TG_Eternal', 'TokenBoundless', 'Miner_Endless', 'Vast',
 ]
 
 const eliteNames = [
@@ -258,14 +258,18 @@ const LeaderboardTab = () => {
 
     const currentTier = user ? getUserTier(user.balance || 0) : null
 
-    // Build dynamic leaderboard data
-    const leaderboardData = baseBalances.map((balance, index) => {
+    // Build dynamic leaderboard data sequentially to enforce food chain
+    const leaderboardData: LeaderboardItem[] = []
+    const tierOrder = ['Newcomer', 'Active', 'Trusted', 'Influencer', 'Whale', 'Elite', 'Legend']
+    const daysSinceEpoch = Math.floor(Date.now() / 86400000)
+
+    baseBalances.forEach((balance, index) => {
         const tier = getUserTier(balance)
         const tierStartIndex = baseBalances.findIndex(b => getUserTier(b).label === tier.label)
         const indexInTier = index - tierStartIndex
         const username = getUsernameForTier(tier.label, indexInTier, timeWindows)
 
-        // Balance logic per tier
+        // Balance logic per tier - maintain food chain: Legend > Elite > Whale > Influencer > Trusted > Active > Newcomer
         let adjustedBalance = balance
 
         if (tier.label === 'Newcomer') {
@@ -273,34 +277,46 @@ const LeaderboardTab = () => {
             adjustedBalance = balance
         } else if (tier.label === 'Active' || tier.label === 'Trusted' || tier.label === 'Influencer' || tier.label === 'Whale') {
             // These tiers: balances always changing organically (like earning at different split seconds)
-            // Use real time + index for pseudo-random fluctuations
-            const now = Date.now() / 1000
-            const tierSpeed = tier.label === 'Active' ? 1 : tier.label === 'Trusted' ? 0.7 : tier.label === 'Influencer' ? 0.5 : 0.3
+            // SLOWER changes: use minutes for slower oscillation
+            const now = Date.now() / 1000 / 60
+            const tierSpeed = tier.label === 'Active' ? 0.3 : tier.label === 'Trusted' ? 0.25 : tier.label === 'Influencer' ? 0.2 : 0.15
             const timeFactor = now * tierSpeed + index * 3.14159
-            // Organic-looking fluctuation: ±3-5% with different phases per person
-            const wave1 = Math.sin(timeFactor * 0.5) * 0.02
-            const wave2 = Math.sin(timeFactor * 1.3 + index) * 0.015
-            const wave3 = Math.sin(timeFactor * 2.7 + index * 0.7) * 0.01
+            const wave1 = Math.sin(timeFactor * 0.3) * 0.015
+            const wave2 = Math.sin(timeFactor * 0.7 + index) * 0.01
+            const wave3 = Math.sin(timeFactor * 1.5 + index * 0.7) * 0.008
             const fluctuation = wave1 + wave2 + wave3
             adjustedBalance = Math.floor(balance * (1 + fluctuation))
+
+            // FOOD CHAIN: Ensure this person stays below the person directly above
+            if (leaderboardData.length > 0) {
+                const personAbove = leaderboardData[leaderboardData.length - 1]
+                if (adjustedBalance >= personAbove.balance) {
+                    adjustedBalance = Math.floor(personAbove.balance * 0.95)
+                }
+            }
         } else if (tier.label === 'Elite') {
-            // Elite: moderate growth every ~3 days (+10% per cycle)
-            const daysSinceEpoch = Math.floor(Date.now() / 86400000)
-            const growthMultiplier = 1 + Math.floor(daysSinceEpoch / 3) * 0.10
+            // Elite: constant names, slow growth every ~5 days (+8% per cycle)
+            const growthMultiplier = 1 + Math.floor(daysSinceEpoch / 5) * 0.08
             adjustedBalance = Math.floor(balance * growthMultiplier)
+            // Ensure Elite < Legend (person above)
+            if (leaderboardData.length > 0) {
+                const personAbove = leaderboardData[leaderboardData.length - 1]
+                if (adjustedBalance >= personAbove.balance) {
+                    adjustedBalance = Math.floor(personAbove.balance * 0.90)
+                }
+            }
         } else if (tier.label === 'Legend') {
-            // Legends: massive growth every ~7 days (+15% per cycle)
-            const daysSinceEpoch = Math.floor(Date.now() / 86400000)
-            const growthMultiplier = 1 + Math.floor(daysSinceEpoch / 7) * 0.15
+            // Legends: constant names, slowest growth every ~7 days (+12% per cycle)
+            const growthMultiplier = 1 + Math.floor(daysSinceEpoch / 7) * 0.12
             adjustedBalance = Math.floor(balance * growthMultiplier)
         }
 
-        return {
+        leaderboardData.push({
             username,
             balance: adjustedBalance,
             place: index + 1,
             medal: getMedal(index + 1),
-        }
+        })
     })
 
     const getTierColor = (balance: number) => getUserTier(balance).color
