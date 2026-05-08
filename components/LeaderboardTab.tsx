@@ -114,9 +114,9 @@ function getDynamicUsername(tierLabel: string, indexInTier: number, tick: number
     if (tier.label === 'Legend' || tier.label === 'Elite') {
         const pool = namePools[tier.label]
         if (pool) {
-            // Legend: changes every 28800 ticks (~1 day if 3s/tick = 86400s)
-            // Elite: changes every 1200 ticks (~1 hour if 3s/tick = 3600s)
-            const speed = tier.label === 'Legend' ? 28800 : 1200
+            // Legend: changes every 86400 ticks (~3 days if 3s/tick = 259200s)
+            // Elite: changes every 28800 ticks (~1 day if 3s/tick = 86400s)
+            const speed = tier.label === 'Legend' ? 86400 : 28800
             const offset = Math.floor(tick / speed) % pool.length
             username = pool[(indexInTier + offset) % pool.length]
         } else {
@@ -133,10 +133,12 @@ function getDynamicUsername(tierLabel: string, indexInTier: number, tick: number
         // Increase balance over time for Legend and Elite (simulate investment)
         let adjustedBalance = balance
         if (tier.label === 'Legend') {
-            const growthMultiplier = 1 + (tick / 28800) * 0.05 // ~5% growth per day for Legends
+            // Legends: massive growth every ~3 days (significant investor jumps)
+            const growthMultiplier = 1 + Math.floor(tick / 86400) * 0.15 // +15% every 3 days
             adjustedBalance = Math.floor(balance * growthMultiplier)
         } else if (tier.label === 'Elite') {
-            const growthMultiplier = 1 + (tick / 1200) * 0.02 // ~2% growth per hour for Elite
+            // Elite: moderate growth every ~1 day
+            const growthMultiplier = 1 + Math.floor(tick / 28800) * 0.05 // +5% every day
             adjustedBalance = Math.floor(balance * growthMultiplier)
         }
 
