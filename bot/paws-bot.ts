@@ -1,13 +1,47 @@
 // bot/paws-bot.ts
 import { Bot, Context } from 'grammy'
 import { doc, getDoc, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
-import { db } from '../utils/firebaseClient'
+import { initializeApp } from 'firebase/app'
+import { getFirestore } from 'firebase/firestore'
+
+// Initialize Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyBVwiJqJ4jbl07v-QzApLat4dAZ8Sj-kIQ",
+    authDomain: "paws-clone.firebaseapp.com",
+    projectId: "paws-clone",
+    storageBucket: "paws-clone.firebasestorage.app",
+    messagingSenderId: "1056285653802",
+    appId: "1:1056285653802:web:59bdf8c8776bf4486b3c53",
+}
+
+const app = initializeApp(firebaseConfig)
+const db = getFirestore(app)
+
+// Import referral system
 import { processNewReferral } from '../utils/referralSystem'
-import { getUserTier, getEstimatedRank } from '../utils/rankingSystem'
+import { getUserTier, getEstimatedRank, RANK_TIERS } from '../utils/rankingSystem'
 import { REFERRAL_REWARDS, User } from '../utils/userUtils'
 
 // Initialize bot with token from environment
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '')
+
+interface BotUser {
+    id: string
+    username: string
+    balance: number
+    referralCode: string
+    referredBy?: string
+    referralCount: number
+    premiumReferralCount: number
+    referralEarnings: number
+    tierLevel: number
+    tierRewardsClaimed: number[]
+    friendsList: any[]
+    referralRewardClaimed: boolean
+    isPremium: boolean
+    created_at: string
+    lastClaim?: number
+}
 
 /**
  * Handle /start command
@@ -33,7 +67,7 @@ bot.command('start', async (ctx) => {
     const referredBy = startPayload ? startPayload : undefined
     
     // Create new user
-    const newUser: User = {
+    const newUser: BotUser = {
         id: userId.toString(),
         username: firstName,
         balance: 50000,
@@ -65,20 +99,21 @@ bot.command('start', async (ctx) => {
  * Handle /balance command
  */
 bot.command('balance', async (ctx) => {
-    const userId = ctx.from?.id
+    const userId = ctx.from?.id?.toString()
+    const firstName = ctx.from?.first_name || 'User'
     
     if (!userId) {
         return ctx.reply('Unable to get user information.')
     }
     
-    const userRef = doc(db, 'users', userId.toString())
+    const userRef = doc(db, 'users', userId)
     const userSnap = await getDoc(userRef)
     
     if (!userSnap.exists()) {
         return ctx.reply('You are not registered. Use /start to register.')
     }
     
-    const userData = userSnap.data() as User
+    const userData = userSnap.data() as BotUser
     const tier = getUserTier(userData.balance || 0)
     
     await ctx.reply(`💰 Your Balance: ${userData.balance?.toLocaleString() || '0'} PAWS\nTier: ${tier.icon} ${tier.label}\nRank: ${getEstimatedRank(userData.balance || 0)}`)
@@ -88,21 +123,21 @@ bot.command('balance', async (ctx) => {
  * Handle /invite command
  */
 bot.command('invite', async (ctx) => {
-    const userId = ctx.from?.id
+    const userId = ctx.from?.id?.toString()
     const firstName = ctx.from?.first_name || 'User'
     
     if (!userId) {
         return ctx.reply('Unable to get user information.')
     }
     
-    const userRef = doc(db, 'users', userId.toString())
+    const userRef = doc(db, 'users', userId)
     const userSnap = await getDoc(userRef)
     
     if (!userSnap.exists()) {
         return ctx.reply('You are not registered. Use /start to register.')
     }
     
-    const userData = userSnap.data() as User
+    const userData = userSnap.data() as BotUser
     const referralLink = `https://t.me/Pawscloudminebot?start=${userId}`
     
     await ctx.reply(`🐾 Invite Friends, ${firstName}!\n\nShare this link:\n${referralLink}\n\nYou earn ${REFERRAL_REWARDS.baseReward.toLocaleString()} PAWS per friend who joins!\nPremium friends earn you ${REFERRAL_REWARDS.premiumFriendBonus.toLocaleString()} PAWS!\n\nYour referrals: ${userData.referralCount || 0}`)
@@ -126,7 +161,7 @@ bot.command('leaderboard', async (ctx) => {
     let leaderboardText = '🏆 PAWS Leaderboard - Top 10\n\n'
     
     snapshot.docs.forEach((docSnap, index) => {
-        const userData = docSnap.data() as User
+        const userData = docSnap.data() as BotUser
         const medal = index === 0 ? '👑' : index === 1 ? '💎' : index === 2 ? '💎' : '🐋'
         leaderboardText += `${medal} ${userData.username || 'Anonymous'}: ${userData.balance?.toLocaleString() || '0'} PAWS\n`
     })
@@ -136,7 +171,7 @@ bot.command('leaderboard', async (ctx) => {
     const userSnap = await getDoc(userRef)
     
     if (userSnap.exists()) {
-        const userData = userSnap.data() as User
+        const userData = userSnap.data() as BotUser
         const rank = getEstimatedRank(userData.balance || 0)
         leaderboardText += `\nYour position: ${rank} with ${userData.balance?.toLocaleString() || '0'} PAWS`
     }
@@ -149,7 +184,7 @@ bot.command('leaderboard', async (ctx) => {
  */
 bot.command('tokenomics', async (ctx) => {
     const tokenomicsText = `📊 PAWS Tokenomics\n\n` +
-        `Total Supply: 100,000,000,000 PAWS\n` +
+        `Total Supply: 100,000,000,000 PAWS\n\n` +
         `Community & Airdrop: 40B (40%) - 🐾 Distributed via airdrops\n` +
         `Mining & Rewards: 25B (25%) - ✅ In-game mining & tasks\n` +
         `Liquidity & CEX: 15B (15%) - 🌟 Exchange listings\n` +
@@ -165,20 +200,20 @@ bot.command('tokenomics', async (ctx) => {
  * Handle /claim command
  */
 bot.command('claim', async (ctx) => {
-    const userId = ctx.from?.id
+    const userId = ctx.from?.id?.toString()
     
     if (!userId) {
         return ctx.reply('Unable to get user information.')
     }
     
-    const userRef = doc(db, 'users', userId.toString())
+    const userRef = doc(db, 'users', userId)
     const userSnap = await getDoc(userRef)
     
     if (!userSnap.exists()) {
         return ctx.reply('You are not registered. Use /start to register.')
     }
     
-    const userData = userSnap.data() as User
+    const userData = userSnap.data() as BotUser
     const lastClaim = userData.lastClaim || 0
     const now = Date.now()
     const cooldown = 3 * 60 * 1000 // 3 minutes
