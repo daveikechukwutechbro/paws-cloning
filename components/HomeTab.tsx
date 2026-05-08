@@ -367,7 +367,7 @@ const HomeTab = () => {
                                 <span className="text-[10px] font-bold text-[#f59e0b]">TGE 2 COMING</span>
                             </div>
                         </div>
-                        <div className="text-lg font-bold text-[#fefefe]">53B Done · 47B Pending</div>
+                        <div className="text-lg font-bold text-[#fefefe]">53B Done successfully· 47B Airdrop coming soon</div>
                         <div className="text-xs text-[#868686] mt-1">TGE 1: 53B distributed • TGE 2: 47B for liquidity & CEX listings</div>
                         <div className="mt-2 flex items-center gap-2">
                             <div className="flex-1 bg-[#ffffff0d] rounded-lg p-2 text-center">
@@ -375,7 +375,7 @@ const HomeTab = () => {
                                 <div className="text-sm font-bold text-[#22c55e]">53B PAWS</div>
                             </div>
                             <div className="flex-1 bg-[#ffffff0d] rounded-lg p-2 text-center">
-                                <div className="text-xs text-[#868686]">TGE 2 Pending</div>
+                                <div className="text-xs text-[#868686]">TGE 2 Coming soon..</div>
                                 <div className="text-sm font-bold text-[#f59e0b]">47B PAWS</div>
                             </div>
                         </div>
