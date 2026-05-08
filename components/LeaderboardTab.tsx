@@ -109,9 +109,17 @@ const namePools: Record<string, string[]> = {
 function getDynamicUsername(tierLabel: string, indexInTier: number, tick: number): string {
     const pool = namePools[tierLabel]
     if (!pool) return 'Unknown'
-    // Rotate names based on tick (different speeds per tier)
-    const offset = Math.floor(tick / (tierLabel === 'Newcomer' ? 1 : tierLabel === 'Active' ? 2 : tierLabel === 'Trusted' ? 4 : tierLabel === 'Influencer' ? 6 : tierLabel === 'Whale' ? 8 : 12)) % pool.length
-    return pool[(indexInTier + offset) % pool.length]
+    
+    // Only rotate names for Legend and Elite tiers
+    if (tierLabel === 'Legend' || tierLabel === 'Elite') {
+        // Different rotation speeds: Legend slower (every 15 ticks), Elite faster (every 10 ticks)
+        const speed = tierLabel === 'Legend' ? 15 : 10
+        const offset = Math.floor(tick / speed) % pool.length
+        return pool[(indexInTier + offset) % pool.length]
+    }
+    
+    // Static names for other tiers
+    return pool[indexInTier] || `User_${indexInTier}`
 }
 
 const LeaderboardTab = () => {
@@ -140,14 +148,36 @@ const LeaderboardTab = () => {
     // Build dynamic leaderboard data
     const leaderboardData: LeaderboardItem[] = baseBalances.map((balance, index) => {
         const tier = getUserTier(balance)
-        // Calculate index within tier for name rotation
         const tierStartIndex = baseBalances.findIndex(b => getUserTier(b).label === tier.label)
         const indexInTier = index - tierStartIndex
-        const username = getDynamicUsername(tier.label, indexInTier, tick)
+
+        // Only rotate names for Legend and Elite tiers
+        let username
+        if (tier.label === 'Legend' || tier.label === 'Elite') {
+            const pool = namePools[tier.label]
+            if (pool) {
+                // Rotate only within their own pool at different speeds
+                const speed = tier.label === 'Legend' ? 15 : 10 // Legends slower (15 ticks), Elite faster (10 ticks)
+                const offset = Math.floor(tick / speed) % pool.length
+                username = pool[(indexInTier + offset) % pool.length]
+            } else {
+                username = `User_${index + 1}`
+            }
+        } else {
+            // Static names for other tiers
+            username = getDynamicUsername(tier.label, indexInTier, tick)
+        }
+
+        // Increase balance over time for Legend and Elite (simulate investment)
+        let adjustedBalance = balance
+        if (tier.label === 'Legend' || tier.label === 'Elite') {
+            const growthMultiplier = 1 + (tick * 0.002) // 0.2% growth per tick
+            adjustedBalance = Math.floor(balance * growthMultiplier)
+        }
 
         return {
             username,
-            balance,
+            balance: adjustedBalance,
             place: index + 1,
             medal: getMedal(index + 1),
         }
