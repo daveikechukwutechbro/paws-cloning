@@ -153,15 +153,31 @@ const LeaderboardTab = () => {
         const indexInTier = index - tierStartIndex
         const username = getUsernameForTier(tier.label, indexInTier, tick)
 
-        // Increase balance over time for Legend and Elite (simulate investment)
+        // Increase balance over time (slower as tier increases)
         let adjustedBalance = balance
         if (tier.label === 'Legend') {
-            // Legends: massive growth every ~3 days (+15% per cycle)
-            const growthMultiplier = 1 + Math.floor(tick / 86400) * 0.15
+            // Legends: massive growth every ~7 days (+15% per cycle)
+            const growthMultiplier = 1 + Math.floor(tick / 201600) * 0.15
             adjustedBalance = Math.floor(balance * growthMultiplier)
         } else if (tier.label === 'Elite') {
-            // Elite: moderate growth every ~1 day (+5% per cycle)
+            // Elite: moderate growth every ~3 days (+10% per cycle)
+            const growthMultiplier = 1 + Math.floor(tick / 86400) * 0.10
+            adjustedBalance = Math.floor(balance * growthMultiplier)
+        } else if (tier.label === 'Whale') {
+            // Whales: steady growth every ~1 day (+5% per cycle)
             const growthMultiplier = 1 + Math.floor(tick / 28800) * 0.05
+            adjustedBalance = Math.floor(balance * growthMultiplier)
+        } else if (tier.label === 'Influencer') {
+            // Influencers: growth every ~12 hours (+3% per cycle)
+            const growthMultiplier = 1 + Math.floor(tick / 14400) * 0.03
+            adjustedBalance = Math.floor(balance * growthMultiplier)
+        } else if (tier.label === 'Trusted') {
+            // Trusted: growth every ~6 hours (+2% per cycle)
+            const growthMultiplier = 1 + Math.floor(tick / 7200) * 0.02
+            adjustedBalance = Math.floor(balance * growthMultiplier)
+        } else if (tier.label === 'Active') {
+            // Active: small growth every ~3 hours (+1% per cycle)
+            const growthMultiplier = 1 + Math.floor(tick / 3600) * 0.01
             adjustedBalance = Math.floor(balance * growthMultiplier)
         }
 
