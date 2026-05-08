@@ -95,31 +95,31 @@ const getMedal = (place: number) => {
 
 const totalUsers = 23_253_686
 
-// Name pools per tier
+// Name pools per tier (MUST match labels in rankingSystem.ts exactly)
 const namePools: Record<string, string[]> = {
     'Newcomer': newcomerNames,
     'Active': activeNames,
     'Trusted': trustedNames,
     'Influencer': influencerNames,
     'Whale': whaleNames,
-    'Elite': eliteNames,
+    'Elite': eliteNames,  // This key must be 'Elite' (with 'i') to match rankingSystem.ts
     'Legend': legendNames,
 }
 
 function getUsernameForTier(tierLabel: string, indexInTier: number, tick: number): string {
-    const pool = namePools[tierLabel]
+    // Normalize label: accept both 'Elite' and 'Elite'
+    const normalizedLabel = tierLabel === 'Elite' ? 'Elite' : tierLabel
+    const pool = namePools[normalizedLabel]
     if (!pool) return 'Unknown'
 
     // Only rotate names for Legend and Elite tiers
-    if (tierLabel === 'Legend' || tierLabel === 'Elite') {
-        // Legend: changes every 86400 ticks (~3 days if 3s/tick = 259200s)
-        // Elite: changes every 28800 ticks (~1 day if 3s/tick = 86400s)
-        const speed = tierLabel === 'Legend' ? 86400 : 28800
+    if (normalizedLabel === 'Legend' || normalizedLabel === 'Elite') {
+        const speed = normalizedLabel === 'Legend' ? 86400 : 28800
         const offset = Math.floor(tick / speed) % pool.length
         return pool[(indexInTier + offset) % pool.length]
     }
 
-    // Static names for other tiers
+    // Static names for other tiers (use pool directly)
     return pool[indexInTier] || `User_${indexInTier}`
 }
 
