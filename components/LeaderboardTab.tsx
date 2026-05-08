@@ -121,9 +121,11 @@ function getUsernameForTier(tierLabel: string, indexInTier: number, tick: number
     if (!pool) return 'Unknown'
 
     // Elite & Legend: constant name pools, only shuffle positions periodically
+    // Offset Legend by half its interval (1.5 days) so they don't shuffle simultaneously
     if (tierLabel === 'Elite' || tierLabel === 'Legend') {
         const interval = tierLabel === 'Elite' ? 28800 : 86400 // 1 day / 3 days
-        const cycle = Math.floor(tick / interval)
+        const offset = tierLabel === 'Legend' ? 43200 : 0 // Half of Legend's interval
+        const cycle = Math.floor((tick + offset) / interval)
         const shuffledPool = deterministicShuffle(pool, cycle)
         return shuffledPool[indexInTier % shuffledPool.length]
     }
@@ -197,6 +199,10 @@ const LeaderboardTab = () => {
         } else if (tier.label === 'Active') {
             // Active: small growth every ~3 hours (+1% per cycle)
             const growthMultiplier = 1 + Math.floor(tick / 3600) * 0.01
+            adjustedBalance = Math.floor(balance * growthMultiplier)
+        } else if (tier.label === 'Newcomer') {
+            // Newcomer: fastest growth every ~1 hour (+0.5% per cycle)
+            const growthMultiplier = 1 + Math.floor(tick / 1200) * 0.005
             adjustedBalance = Math.floor(balance * growthMultiplier)
         }
 
