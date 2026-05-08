@@ -1,7 +1,7 @@
 'use client'
 
 import PawsLogo from '@/icons/PawsLogo'
-import { trophy } from '@/images'
+import { trophy } from '@/images/'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
@@ -102,25 +102,44 @@ const namePools: Record<string, string[]> = {
     'Trusted': trustedNames,
     'Influencer': influencerNames,
     'Whale': whaleNames,
-    'Elite': eliteNames,  // This key must be 'Elite' (with 'i') to match rankingSystem.ts
+    'Elite': eliteNames,
     'Legend': legendNames,
 }
 
+// Deterministic shuffle for constant name pools (Elite/Legend)
+const deterministicShuffle = (arr: string[], seed: number) => {
+    const shuffled = [...arr]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = (seed + i) % (i + 1)
+        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return shuffled
+}
+
 function getUsernameForTier(tierLabel: string, indexInTier: number, tick: number): string {
-    // Normalize label: accept both 'Elite' and 'Elite'
-    const normalizedLabel = tierLabel === 'Elite' ? 'Elite' : tierLabel
-    const pool = namePools[normalizedLabel]
+    const pool = namePools[tierLabel]
     if (!pool) return 'Unknown'
 
-    // Only rotate names for Legend and Elite tiers
-    if (normalizedLabel === 'Legend' || normalizedLabel === 'Elite') {
-        const speed = normalizedLabel === 'Legend' ? 86400 : 28800
-        const offset = Math.floor(tick / speed) % pool.length
-        return pool[(indexInTier + offset) % pool.length]
+    // Elite & Legend: constant name pools, only shuffle positions periodically
+    if (tierLabel === 'Elite' || tierLabel === 'Legend') {
+        const interval = tierLabel === 'Elite' ? 28800 : 86400 // 1 day / 3 days
+        const cycle = Math.floor(tick / interval)
+        const shuffledPool = deterministicShuffle(pool, cycle)
+        return shuffledPool[indexInTier % shuffledPool.length]
     }
 
-    // Static names for other tiers (use pool directly)
-    return pool[indexInTier] || `User_${indexInTier}`
+    // Lower tiers: rotate names with no repetition (faster as tier decreases)
+    const rotationSpeeds: Record<string, number> = {
+        'Newcomer': 1,    // Every 3s
+        'Active': 2,      // Every 6s
+        'Trusted': 4,     // Every 12s
+        'Influencer': 6,  // Every 18s
+        'Whale': 8,       // Every 24s
+    }
+
+    const speed = rotationSpeeds[tierLabel] || 1
+    const offset = Math.floor(tick / speed) % pool.length
+    return pool[(indexInTier + offset) % pool.length]
 }
 
 const LeaderboardTab = () => {
@@ -262,8 +281,8 @@ const LeaderboardTab = () => {
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                                                 item.place === 1 ? 'bg-gradient-to-br from-[#ffd700] to-[#b8860b]' :
                                                 item.place === 2 ? 'bg-gradient-to-br from-[#c0c0c0] to-[#808080]' :
-                                                item.place === 3 ? 'bg-gradient-to-br from-[#cd7f32] to-[#8b4513]' :
-                                                'bg-[#2d2d2e]'
+                                                    item.place === 3 ? 'bg-gradient-to-br from-[#cd7f32] to-[#8b4513]' :
+                                                        'bg-[#2d2d2e]'
                                             }`}>
                                                 {item.medal}
                                             </div>
