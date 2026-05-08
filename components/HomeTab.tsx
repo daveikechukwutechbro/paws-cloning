@@ -346,7 +346,7 @@ const HomeTab = () => {
 
                 <button
                     onClick={() => setShowTokenomics(true)}
-                    className="w-full bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg px-4 py-2 flex items-center justify-between mt-3"
+                    className="w-full bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg px-4 py-2 flex items-center justify-between mt-3 shine-effect"
                 >
                     <div className="flex items-center gap-3 font-medium">
                         <Star className="w-8 h-8" />
@@ -354,6 +354,33 @@ const HomeTab = () => {
                     </div>
                     <ArrowRight className="w-6 h-6 text-gray-400" />
                 </button>
+
+                {/* Airdrop Coming Soon Banner */}
+                <div className="mt-3 bg-gradient-to-r from-[#4c9ce2]/20 via-[#22c55e]/20 to-[#f59e0b]/20 border border-[#4c9ce2]/30 rounded-xl p-4 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[#4c9ce2]/5 animate-pulse" />
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xl">🪂</span>
+                            <span className="text-sm font-bold text-[#4c9ce2] uppercase tracking-wider">Airdrop</span>
+                            <div className="ml-auto flex items-center gap-1 bg-[#f59e0b]/20 px-2 py-0.5 rounded-full">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] animate-pulse" />
+                                <span className="text-[10px] font-bold text-[#f59e0b]">COMING SOON</span>
+                            </div>
+                        </div>
+                        <div className="text-lg font-bold text-[#fefefe]">Airdrop Phase 1</div>
+                        <div className="text-xs text-[#868686] mt-1">Stay active, complete tasks, and invite friends to maximize your allocation.</div>
+                        <div className="mt-2 flex items-center gap-2">
+                            <div className="flex-1 bg-[#ffffff0d] rounded-lg p-2 text-center">
+                                <div className="text-xs text-[#868686]">Est. Total</div>
+                                <div className="text-sm font-bold text-[#4c9ce2]">40B PAWS</div>
+                            </div>
+                            <div className="flex-1 bg-[#ffffff0d] rounded-lg p-2 text-center">
+                                <div className="text-xs text-[#868686]">Requirements</div>
+                                <div className="text-sm font-bold text-[#22c55e]">Active + Referrals</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <button 
                     onClick={() => setShowBuyMenu(!showBuyMenu)}
