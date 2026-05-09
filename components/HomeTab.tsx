@@ -22,6 +22,8 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
 import { getUserTier, getNextTier, getProgressToNextTier, getEstimatedRank, RANK_TIERS } from '@/utils/rankingSystem'
 import TokenomicsModal from '@/components/TokenomicsModal'
+import MiningUpgradeShop from '@/components/MiningUpgradeShop'
+import { DEFAULT_MINING_RATE, getMiningBonusRate, ActiveMiningUpgrade } from '@/utils/miningUpgrades'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -50,6 +52,11 @@ const HomeTab = () => {
     const [isClaiming, setIsClaiming] = useState(false)
     const [showRankModal, setShowRankModal] = useState(false)
     const [showTokenomics, setShowTokenomics] = useState(false)
+    const [showMiningShop, setShowMiningShop] = useState(false)
+    const [activeMiningUpgrades, setActiveMiningUpgrades] = useState<ActiveMiningUpgrade[]>([])
+
+    // Your TON receiving wallet address for mining upgrades
+    const RECEIVING_TON_WALLET = 'UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J'
     
     const buyPackages = [
         { name: '1,000 PAWS', price: '$1', amount: 1000 },
@@ -295,8 +302,12 @@ const HomeTab = () => {
             <div className="px-4 mt-6">
                 <div className="bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg p-4">
                     <div className="text-center mb-3">
-                        <div className="text-lg font-medium">Hourly Reward</div>
-                        <div className="text-sm text-[#868686]">Claim 2000 PAWS every hour</div>
+                        <div className="text-lg font-medium">
+                            Hourly Reward: {user && user.miningUpgrades ? 
+                                (DEFAULT_MINING_RATE + getMiningBonusRate(user.miningUpgrades)).toLocaleString() : 
+                                DEFAULT_MINING_RATE.toLocaleString()} PAWS
+                        </div>
+                        <div className="text-sm text-[#868686]">Claim every hour</div>
                     </div>
                     {timeRemaining > 0 ? (
                         <div className="text-center">
@@ -309,10 +320,27 @@ const HomeTab = () => {
                             disabled={isClaiming}
                             className="w-full bg-[#007aff] text-white py-2 rounded-lg font-medium hover:bg-[#0056cc] transition-colors disabled:opacity-50"
                         >
-                            {isClaiming ? 'Claiming...' : 'Claim 2000 PAWS'}
+                            {isClaiming ? 'Claiming...' : `Claim ${user && user.miningUpgrades ? 
+                                (DEFAULT_MINING_RATE + getMiningBonusRate(user.miningUpgrades)).toLocaleString() : 
+                                DEFAULT_MINING_RATE.toLocaleString()} PAWS`}
                         </button>
                     )}
                 </div>
+
+                {/* Mining Speed Upgrade Button */}
+                <button
+                    onClick={() => setShowMiningShop(true)}
+                    className="w-full mt-3 bg-gradient-to-r from-[#f59e0b] to-[#ef4444] text-white rounded-lg px-4 py-3 flex items-center justify-between"
+                >
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">⚡</span>
+                        <div className="text-left">
+                            <div className="font-semibold">Boost Mining Speed</div>
+                            <div className="text-xs text-white/80">Up to +100,000 PAWS/hr</div>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-6 h-6" />
+                </button>
             </div>
 
             <div className="px-4 mt-8 mb-8">
@@ -511,6 +539,18 @@ const HomeTab = () => {
                     </div>
                 </div>
             , document.body)}
+
+            {/* Mining Upgrade Shop */}
+            {showMiningShop && typeof document !== 'undefined' && createPortal(
+                <MiningUpgradeShop 
+                    onClose={() => setShowMiningShop(false)}
+                    onPurchaseComplete={() => {
+                        refreshUser()
+                        setShowMiningShop(false)
+                    }}
+                />,
+                document.body
+            )}
         </div>
     )
 }
