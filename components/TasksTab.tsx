@@ -332,6 +332,9 @@ const TasksTab = () => {
         },
     ]
 
+    // Combine in-game tasks with social tasks
+    const allInGameTasks: Task[] = [...inGameTasks, ...socialTasks]
+
     const renderTaskButton = (task: Task) => {
         const isCompleted = completedTasks.has(task.id)
         const isLoading = loadingTasks.has(task.id)
@@ -453,7 +456,7 @@ const TasksTab = () => {
 
             {/* Tasks List */}
             <div className="mt-4 mb-20 bg-[#151516] rounded-xl">
-                {(activeTab === 'in-game' ? inGameTasks : partnerTasks).map((task, index) => (
+                {(activeTab === 'in-game' ? allInGameTasks : partnerTasks).map((task, index) => (
                     <div
                         key={task.id}
                         className="flex items-center"
