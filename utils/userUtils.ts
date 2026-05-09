@@ -27,6 +27,7 @@ export interface User {
     lastReferralAt?: Timestamp
     isPremium?: boolean
     created_at?: string
+    completedTasks?: string[]
 }
 
 export async function getOrCreateUser(
@@ -174,4 +175,28 @@ export async function updateUserUpgrade(userId: string, upgradeType: string, lev
         [`upgrade_${upgradeType}`]: level,
         id: userId
     }, { merge: true })
+}
+
+export async function updateCompletedTask(userId: string, taskId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId)
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef)
+
+            if (!userSnap.exists()) return
+
+            const userData = userSnap.data() as User
+            const currentTasks = userData.completedTasks || []
+
+            if (currentTasks.includes(taskId)) return
+
+            transaction.update(userRef, {
+                completedTasks: [...currentTasks, taskId],
+                lastTaskCompletedAt: new Date().toISOString()
+            })
+        })
+    } catch (error) {
+        console.error('Transaction failed updating completed task:', error)
+    }
 }

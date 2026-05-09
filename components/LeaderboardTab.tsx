@@ -306,9 +306,19 @@ const LeaderboardTab = () => {
                 }
             }
         } else if (tier.label === 'Legend') {
-            // Legends: constant names, slowest growth every ~7 days (+12% per cycle)
-            const growthMultiplier = 1 + Math.floor(daysSinceEpoch / 7) * 0.12
-            adjustedBalance = Math.floor(balance * growthMultiplier)
+            // Legends: constant names, slow but consistent growth (+2% every day)
+            // Organic growth: use sine waves for natural feel
+            const now = Date.now() / 1000 / 60 / 60 // hours since epoch
+            const baseGrowth = 1 + daysSinceEpoch * 0.02
+            const organicWave = 1 + Math.sin(now * 0.1 + index) * 0.01 // ±1% wave
+            adjustedBalance = Math.floor(balance * baseGrowth * organicWave)
+            // Enforce food chain: Legend must stay above Elite
+            if (leaderboardData.length > 0) {
+                const personAbove = leaderboardData[leaderboardData.length - 1]
+                if (adjustedBalance <= personAbove.balance) {
+                    adjustedBalance = Math.floor(personAbove.balance * 1.05)
+                }
+            }
         }
 
         leaderboardData.push({
