@@ -11,7 +11,8 @@ type LeaderboardItem = {
     username: string
     balance: number
     place: number
-    medal?: string
+    medal?: { emoji: string; bg: string }
+    tierLabel: string
 }
 
 // Massive realistic global human name pools (all continents)
@@ -147,15 +148,15 @@ const baseBalances = [
     95_000, 87_000, 78_000, 68_000, 55_000, 42_000, 28_000, 12_000,
 ]
 
-// Medal mapping
-const getMedal = (place: number) => {
-    if (place === 1) return '👑'
-    if (place <= 3) return '💎'
-    if (place <= 9) return '💎'
-    if (place <= 13) return '🐋'
-    if (place <= 17) return '🌟'
-    if (place <= 20) return '✅'
-    return undefined
+// Medal mapping - show tier badges
+const getMedal = (place: number, tierLabel: string) => {
+    if (place === 1) return { emoji: '👑', bg: 'from-[#ffd700] to-[#b8860b]' }
+    if (place === 2) return { emoji: '🥈', bg: 'from-[#c0c0c0] to-[#808080]' }
+    if (place === 3) return { emoji: '🥉', bg: 'from-[#cd7f32] to-[#8b4513]' }
+    if (tierLabel === 'Legend') return { emoji: '👑', bg: 'from-[#ffd700] to-[#ffaa00]' }
+    if (tierLabel === 'Elite') return { emoji: '💎', bg: 'from-[#ec4899] to-[#f472b6]' }
+    if (tierLabel === 'Whale') return { emoji: '🐋', bg: 'from-[#a855f7] to-[#c084fc]' }
+    return null
 }
 
 const totalUsers = 23_253_686
@@ -330,7 +331,8 @@ const LeaderboardTab = () => {
             username,
             balance: adjustedBalance,
             place: index + 1,
-            medal: getMedal(index + 1),
+            medal: getMedal(index + 1, tier.label),
+            tierLabel: tier.label,
         })
     })
 
@@ -400,37 +402,44 @@ const LeaderboardTab = () => {
                     <div className="space-y-1">
                         {leaderboardData.map((item, index) => {
                             const tierColor = getTierColor(item.balance)
+                            const tierBgColor = getUserTier(item.balance).bgColor
                             return (
-                                <div key={`${item.place}-${item.username}`} className="flex items-center justify-between p-3 rounded-xl bg-[#151516] border border-[#222622] hover:bg-[#1a1a1b] transition-colors">
+                                <div 
+                                    key={`${item.place}-${item.username}`} 
+                                    className="flex items-center justify-between p-3 rounded-xl border transition-all hover:scale-[1.01]"
+                                    style={{
+                                        background: item.tierLabel === 'Legend' ? 'linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,170,0,0.05))' :
+                                                   item.tierLabel === 'Elite' ? 'linear-gradient(135deg, rgba(236,72,153,0.1), rgba(244,114,182,0.05))' :
+                                                   '#151516',
+                                        borderColor: item.tierLabel === 'Legend' ? '#ffd700' :
+                                                    item.tierLabel === 'Elite' ? '#ec4899' :
+                                                    '#222622'
+                                    }}
+                                >
                                     <div className="flex items-center gap-3">
                                         {item.medal ? (
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                                                item.place === 1 ? 'bg-gradient-to-br from-[#ffd700] to-[#b8860b]' :
-                                                item.place === 2 ? 'bg-gradient-to-br from-[#c0c0c0] to-[#808080]' :
-                                                    item.place === 3 ? 'bg-gradient-to-br from-[#cd7f32] to-[#8b4513]' :
-                                                        'bg-[#2d2d2e]'
-                                            }`}>
-                                                {item.medal}
+                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg bg-gradient-to-br ${item.medal.bg} shadow-lg`}>
+                                                {item.medal.emoji}
                                             </div>
                                         ) : (
-                                            <div className="w-8 h-8 rounded-full bg-[#2d2d2e] flex items-center justify-center text-xs text-[#868686] font-semibold">
+                                            <div className="w-9 h-9 rounded-full bg-[#2d2d2e] flex items-center justify-center text-xs text-[#868686] font-bold">
                                                 #{item.place}
                                             </div>
                                         )}
                                         <div>
-                                            <div className="text-sm font-medium text-[#fefefe]">{item.username}</div>
+                                            <div className="text-sm font-semibold text-[#fefefe]">{item.username}</div>
                                             <div className="text-xs text-[#868686]">
                                                 {item.balance.toLocaleString()} PAWS
                                             </div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-sm">{getTierIcon(item.balance)}</span>
-                                        <div className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{
+                                        <div className="text-sm px-3 py-1 rounded-full font-medium" style={{
                                             color: tierColor,
-                                            backgroundColor: getUserTier(item.balance).bgColor
+                                            backgroundColor: tierBgColor,
+                                            border: `1px solid ${tierColor}40`
                                         }}>
-                                            {getTierIcon(item.balance)} {getUserTier(item.balance).label}
+                                            {getTierIcon(item.balance)} {item.tierLabel}
                                         </div>
                                     </div>
                                 </div>

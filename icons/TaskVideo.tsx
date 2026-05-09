@@ -7,20 +7,20 @@ interface TaskVideoProps {
 const TaskVideo = ({ className }: TaskVideoProps) => {
     return (
         <svg className={className} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="80" height="80" rx="16" fill="url(#videoGrad)"/>
-            <rect x="12" y="16" width="56" height="40" rx="8" fill="#1a1a2e" stroke="#fff" strokeWidth="2"/>
-            <circle cx="40" cy="36" r="12" fill="#fff"/>
-            <polygon points="37,31 47,36 37,41" fill="#ff3b5c"/>
-            <rect x="52" y="20" width="8" height="4" rx="1" fill="#ff3b5c"/>
-            <rect x="52" y="26" width="6" height="4" rx="1" fill="#ffaa00"/>
-            <rect x="52" y="32" width="4" height="4" rx="1" fill="#00d4aa"/>
-            <circle cx="64" cy="24" r="2" fill="#ff3b5c"/>
-            <circle cx="64" cy="30" r="2" fill="#ffaa00"/>
-            <circle cx="64" cy="36" r="2" fill="#00d4aa"/>
+            <rect width="80" height="80" rx="20" fill="url(#videoGrad2)"/>
+            <circle cx="40" cy="40" r="24" fill="rgba(255,255,255,0.2)"/>
+            <circle cx="40" cy="40" r="18" fill="#fff"/>
+            <polygon points="35,30 55,40 35,50" fill="#ff3366"/>
+            <circle cx="58" cy="20" r="4" fill="#ff3366"/>
+            <circle cx="65" cy="28" r="3" fill="#ffaa00"/>
+            <circle cx="22" cy="55" r="3" fill="#00d4aa"/>
+            <path d="M15 25 L20 20 L25 25 L20 30 Z" fill="#ff3366" opacity="0.8"/>
+            <path d="M55 55 L60 60 L65 55 L60 50 Z" fill="#00d4aa" opacity="0.8"/>
             <defs>
-                <linearGradient id="videoGrad" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#ff3b5c"/>
-                    <stop offset="1" stopColor="#ff6b8a"/>
+                <linearGradient id="videoGrad2" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#ff3366"/>
+                    <stop offset="0.5" stopColor="#ff6b8a"/>
+                    <stop offset="1" stopColor="#ff9eb5"/>
                 </linearGradient>
             </defs>
         </svg>
