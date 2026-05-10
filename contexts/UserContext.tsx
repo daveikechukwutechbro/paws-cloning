@@ -1,5 +1,27 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
-import { applyReferralReward, getOrCreateUser, User } from '@/utils/userUtils'
+import { applyReferralReward, getOrCreateUser } from '@/utils/userUtils'
+import { ActiveMiningUpgrade } from '@/utils/miningUpgrades'
+
+export interface User {
+    id: string
+    username: string
+    balance: number
+    referralCode?: string
+    referredBy?: string
+    referralCount?: number
+    premiumReferralCount?: number
+    referralEarnings?: number
+    tierLevel?: number
+    tierRewardsClaimed?: number[]
+    friendsList?: any[]
+    referralRewardClaimed?: boolean
+    lastReferralAt?: any
+    isPremium?: boolean
+    created_at?: string
+    completedTasks?: string[]
+    miningUpgrades?: ActiveMiningUpgrade[]
+    miningUpgradedAt?: string
+}
 
 type UserContextType = {
     user: User | null
@@ -65,11 +87,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
         try {
             const userData = await getOrCreateUser(userId, username, refCode, isPremium)
+            
             if (userData) {
-                setUser(userData)
+                setUser({
+                    ...userData,
+                    completedTasks: userData.completedTasks || [],
+                    miningUpgrades: userData.miningUpgrades || []
+                })
                 applyReferralReward(userId).catch(() => {})
             } else {
-                setUser({
+                const fallbackUser: User = {
                     id: userId,
                     username,
                     balance: 50000,
@@ -81,12 +108,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     tierRewardsClaimed: [],
                     friendsList: [],
                     referralRewardClaimed: false,
-                    isPremium
-                })
+                    isPremium,
+                    completedTasks: [],
+                    miningUpgrades: []
+                }
+                setUser(fallbackUser)
             }
         } catch (error) {
             console.error('Error loading user:', error)
-            setUser({
+            const fallbackUser: User = {
                 id: userId,
                 username,
                 balance: 50000,
@@ -98,8 +128,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 tierRewardsClaimed: [],
                 friendsList: [],
                 referralRewardClaimed: false,
-                isPremium
-            })
+                isPremium,
+                completedTasks: [],
+                miningUpgrades: []
+            }
+            setUser(fallbackUser)
         } finally {
             setLoading(false)
         }
