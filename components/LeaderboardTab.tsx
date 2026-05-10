@@ -129,13 +129,13 @@ const legendNames = [
     'CryptoWhale_2024', 'PAWS_OG_Hunter', 'DiamondHands_ETH', 'TON_Believer', 'MegaMiner_99',
 ]
 
-// Static top 50 base balances - ensuring all tiers are represented
-// Order: Legend (top 2) > Elite (next 5) > Whale (next 8) > Influencer (next 10) > Trusted (next 10) > Active (next 8) > Newcomer (rest)
+// Static top 55 base balances - Legend: 3, Elite: 4, then others
+// Order: Legend (top 3) > Elite (next 4) > Whale (next 8) > Influencer (next 10) > Trusted (next 10) > Active (next 8) > Newcomer (rest)
 const baseBalances = [
-    // Legend tier (50M+): Top 2
-    87_452_310, 76_891_204,
-    // Elite tier (20M-50M): Next 5
-    49_800_000, 42_500_000, 35_200_000, 28_900_000, 22_100_000,
+    // Legend tier (50M+): Top 3
+    87_452_310, 76_891_204, 65_230_487,
+    // Elite tier (20M-50M): Next 4
+    48_500_000, 41_200_000, 34_800_000, 28_100_000,
     // Whale tier (5M-20M): Next 8
     18_320_412, 15_800_000, 12_764_891, 10_200_000, 8_500_000, 7_200_000, 5_800_000, 5_100_000,
     // Influencer tier (1M-5M): Next 10
@@ -154,7 +154,7 @@ const getMedal = (place: number, tierLabel: string) => {
     if (place === 2) return { emoji: '🥈', bg: 'from-[#c0c0c0] to-[#808080]' }
     if (place === 3) return { emoji: '🥉', bg: 'from-[#cd7f32] to-[#8b4513]' }
     if (tierLabel === 'Legend') return { emoji: '👑', bg: 'from-[#ffd700] to-[#ffaa00]' }
-    if (tierLabel === 'Elite') return { emoji: '💎', bg: 'from-[#ec4899] to-[#f472b6]' }
+    if (tierLabel === 'Elite') return { emoji: '🔮', bg: 'from-[#8b5cf6] to-[#a78bfa]' }
     if (tierLabel === 'Whale') return { emoji: '🐋', bg: 'from-[#a855f7] to-[#c084fc]' }
     return null
 }
