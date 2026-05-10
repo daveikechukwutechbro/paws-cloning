@@ -59,10 +59,10 @@ const HomeTab = () => {
     const RECEIVING_TON_WALLET = 'UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J'
     
     const buyPackages = [
-        { name: '1,000 PAWS', price: '$1', amount: 1000 },
-        { name: '5,000 PAWS', price: '$4', amount: 5000 },
-        { name: '10,000 PAWS', price: '$7', amount: 10000 },
-        { name: '50,000 PAWS', price: '$30', amount: 50000 },
+        { name: '250M PAWS', price: '300', amount: 250_000_000, bonus: 0 },
+        { name: '500M PAWS', price: '570', amount: 500_000_000, bonus: 0 },
+        { name: '750M PAWS', price: '857', amount: 750_000_000, bonus: 0 },
+        { name: '1B PAWS', price: '1,140', amount: 1_000_000_000, bonus: 0 },
     ]
 
     const syncBalanceFromFirebase = useCallback(async () => {
@@ -412,39 +412,66 @@ const HomeTab = () => {
 
                 <button 
                     onClick={() => setShowBuyMenu(!showBuyMenu)}
-                    className="w-full bg-[#007aff] border border-[#007aff] rounded-lg px-4 py-3 flex items-center justify-between mt-3"
+                    className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] border border-[#22c55e] rounded-xl px-4 py-3 flex items-center justify-between mt-3"
                 >
                     <div className="flex items-center gap-3 font-medium text-white">
-                        <PawsLogo className="w-8 h-8" />
-                        <span>Buy PAWS</span>
+                        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                            <span>🪙</span>
+                        </div>
+                        <div>
+                            <div className="font-bold">Pre-Sale LIVE</div>
+                            <div className="text-xs text-white/80">Buy PAWS with TON</div>
+                        </div>
                     </div>
                     <ArrowRight className={`w-6 h-6 text-white transition-transform ${showBuyMenu ? 'rotate-90' : ''}`} />
                 </button>
 
                 {showBuyMenu && (
-                    <div className="mt-2 bg-[#1a1a1b] border-[1px] border-[#2d2d2e] rounded-lg overflow-hidden p-4">
-                        <div className="text-center mb-4">
-                            <div className="text-sm text-gray-400 mb-2">Send TON to this address:</div>
-                            <div className="text-xs bg-[#2d2d2e] p-2 rounded break-all text-white">
+                    <div className="mt-2 bg-[#151516] border border-[#22c55e]/30 rounded-2xl overflow-hidden">
+                        <div className="bg-gradient-to-r from-[#22c55e]/20 to-transparent p-4 border-b border-[#2d2d2e]">
+                            <div className="text-sm text-gray-400 mb-1">Send TON to:</div>
+                            <div className="text-xs bg-[#1f1f20] p-2 rounded-lg break-all text-[#22c55e] font-mono">
                                 UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J
                             </div>
                             <button 
                                 onClick={() => navigator.clipboard.writeText('UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J')}
-                                className="mt-2 text-[#007aff] text-sm"
+                                className="mt-2 text-[#007aff] text-xs flex items-center gap-1"
                             >
-                                Copy Address
+                                📋 Copy Address
                             </button>
                         </div>
-                        <div className="text-center text-xs text-gray-500 mb-4">
-                            After sending, contact admin to credit your PAWS
+                        
+                        <div className="p-3 bg-[#f59e0b]/10 border-b border-[#2d2d2e]">
+                            <div className="flex items-center gap-2 text-[#f59e0b] text-xs">
+                                <span>⚠️</span>
+                                <span>Pre-sale ends when hard cap is reached. Send exact TON amount.</span>
+                            </div>
                         </div>
-                        <div className="space-y-2">
+                        
+                        <div className="space-y-2 p-3">
                             {buyPackages.map((pkg, index) => (
-                                <div key={index} className="flex justify-between items-center p-2 bg-[#2d2d2e] rounded">
-                                    <span className="text-white">{pkg.name}</span>
-                                    <span className="text-gray-400">{pkg.price}</span>
+                                <div key={index} className="flex justify-between items-center p-3 bg-[#1f1f20] rounded-xl border border-[#2d2d2e]">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#007aff] to-[#0056cc] flex items-center justify-center text-lg">
+                                            🪙
+                                        </div>
+                                        <div>
+                                            <span className="text-white font-semibold">{pkg.name}</span>
+                                            <div className="text-xs text-gray-500">Token Amount</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-lg font-bold text-white">{pkg.price}</div>
+                                        <div className="text-xs text-gray-500">TON</div>
+                                    </div>
                                 </div>
                             ))}
+                        </div>
+                        
+                        <div className="p-4 bg-[#0f0f10] border-t border-[#2d2d2e]">
+                            <div className="text-center text-xs text-gray-500">
+                                After sending TON, enter your TX hash in the bot to claim your PAWS tokens
+                            </div>
                         </div>
                     </div>
             )}
