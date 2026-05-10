@@ -523,10 +523,13 @@ const [showMiningShop, setShowMiningShop] = useState(false)
                                     <input
                                         type="text"
                                         value={presaleTxHash}
-                                        onChange={(e) => setPresaleTxHash(e.target.value.trim())}
-                                        placeholder="Paste your TON transaction hash..."
+                                        onChange={(e) => {
+                                            setPresaleTxHash(e.target.value)
+                                        }}
+                                        placeholder="Paste your TON transaction hash here..."
                                         className="w-full bg-[#1f1f20] text-white rounded-xl px-4 py-3 text-sm border border-[#2d2d2e] focus:border-[#007aff] outline-none"
                                     />
+                                    <p className="text-xs text-gray-500 mt-1">Find TX hash in your TON wallet after sending</p>
                                 </div>
 
                                 {presaleError && (
@@ -578,23 +581,24 @@ const [showMiningShop, setShowMiningShop] = useState(false)
                                 
                                 <div className="space-y-2 p-3">
                                     {PRESALE_PACKAGES.map((pkg) => (
-                                        <div 
+                                        <button 
                                             key={pkg.id} 
+                                            type="button"
                                             onClick={() => setSelectedPresale(pkg.id)}
-                                            className="flex justify-between items-center p-3 bg-[#1f1f20] rounded-xl border border-[#2d2d2e] cursor-pointer hover:border-[#007aff] transition-colors"
+                                            className="w-full flex justify-between items-center p-3 bg-[#1f1f20] rounded-xl border border-[#2d2d2e] cursor-pointer hover:border-[#007aff] transition-colors active:scale-[0.98]"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#007aff] to-[#0056cc] flex items-center justify-center text-lg">🪙</div>
-                                                <div>
-                                                    <span className="text-white font-semibold">{pkg.name}</span>
-                                                    <div className="text-xs text-gray-500">Token Amount</div>
+                                                <div className="text-left">
+                                                    <span className="text-white font-semibold block">{pkg.name}</span>
+                                                    <span className="text-xs text-gray-500">Token Amount</span>
                                                 </div>
                                             </div>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold text-white">{pkg.priceTon}</div>
                                                 <div className="text-xs text-gray-500">TON</div>
                                             </div>
-                                        </div>
+                                        </button>
                                     ))}
                                 </div>
                                 
