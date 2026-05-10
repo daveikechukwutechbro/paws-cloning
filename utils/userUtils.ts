@@ -316,3 +316,41 @@ export async function checkAndExpireUpgrades(): Promise<void> {
         console.error('Error checking expired upgrades:', error)
     }
 }
+
+export async function processPreSalePurchase(
+    userId: string,
+    packageId: string,
+    amount: number,
+    transactionHash: string
+): Promise<{ success: boolean; error?: string }> {
+    const userRef = doc(db, 'users', userId)
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef)
+
+            if (!userSnap.exists()) {
+                throw new Error('User not found')
+            }
+
+            const userData = userSnap.data() as User
+            const currentBalance = userData.balance || 0
+
+            // Credit the user immediately with the purchased PAWS tokens
+            transaction.update(userRef, {
+                balance: currentBalance + amount,
+                lastPreSalePurchase: {
+                    packageId,
+                    amount,
+                    transactionHash,
+                    purchaseDate: new Date().toISOString()
+                }
+            })
+        })
+
+        return { success: true }
+    } catch (error: any) {
+        console.error('Transaction failed processing pre-sale purchase:', error)
+        return { success: false, error: error.message || 'Failed to process purchase' }
+    }
+}
