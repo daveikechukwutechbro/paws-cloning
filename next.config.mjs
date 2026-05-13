@@ -6,6 +6,18 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    images: {
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'i.imgur.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'imgur.com',
+            },
+        ],
+    },
 };
 
 export default nextConfig;

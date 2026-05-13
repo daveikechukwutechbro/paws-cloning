@@ -482,12 +482,10 @@ const TasksTab = () => {
                         <div className="w-[72px] flex justify-center">
                             <div className="w-10 h-10">
                                 {typeof task.icon === 'string' ? (
-                                    <Image
+                                    <img
                                         src={task.icon}
                                         alt={task.title}
-                                        width={40}
-                                        height={40}
-                                        className="w-full h-full object-contain"
+                                        className="w-10 h-10 object-contain"
                                     />
                                 ) : (
                                     <task.icon className="w-full h-full" />
