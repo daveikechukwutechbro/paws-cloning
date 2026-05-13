@@ -304,30 +304,48 @@ const TasksTab = () => {
 
     const partnerTasks: Task[] = [
         {
-            id: 'join_blum',
-            icon: taskWhitePaws.src,
-            title: 'Join Blum Channel',
-            description: 'Join our partner Blum on Telegram',
-            reward: 1000,
-            link: 'https://t.me/blum',
+            id: 'partner_ton',
+            icon: TaskTON,
+            title: 'Visit TON',
+            description: 'Explore the TON ecosystem',
+            reward: 500000,
+            link: 'https://ton.org/en',
             type: 'social',
         },
         {
-            id: 'join_hamster',
-            icon: taskWhitePaws.src,
-            title: 'Join Hamster Channel',
-            description: 'Join partner Hamster Combat',
-            reward: 1000,
-            link: 'https://t.me/hamster_kombat_bot',
+            id: 'partner_solana',
+            icon: TaskSolana,
+            title: 'Learn Solana',
+            description: 'Discover the Solana blockchain',
+            reward: 500000,
+            link: 'https://solana.com',
             type: 'social',
         },
         {
-            id: 'join_major',
-            icon: taskWhitePaws.src,
-            title: 'Join Major Channel',
-            description: 'Join partner Major',
-            reward: 1000,
-            link: 'https://t.me/majorcoin',
+            id: 'partner_bybit',
+            icon: TaskBybit,
+            title: 'Explore Bybit',
+            description: 'Trade on Bybit exchange',
+            reward: 500000,
+            link: 'https://bybit.com',
+            type: 'social',
+        },
+        {
+            id: 'partner_bitget',
+            icon: TaskBitget,
+            title: 'Discover Bitget',
+            description: 'Copy trading on Bitget',
+            reward: 500000,
+            link: 'https://www.bitgetapp.com',
+            type: 'social',
+        },
+        {
+            id: 'partner_okx',
+            icon: TaskOKX,
+            title: 'Visit OKX',
+            description: 'Trade on OKX exchange',
+            reward: 500000,
+            link: 'https://www.okx.com',
             type: 'social',
         },
     ]
@@ -552,6 +570,58 @@ const TaskYouTube = ({ className }: { className?: string }) => (
         <circle cx="60" cy="18" r="4" fill="#fff"/>
         <circle cx="65" cy="25" r="3" fill="#fff"/>
         <circle cx="68" cy="32" r="2" fill="#fff"/>
+    </svg>
+)
+
+// Partner icons
+const TaskTON = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="80" height="80" rx="20" fill="#0098EA"/>
+        <circle cx="40" cy="40" r="25" fill="#fff"/>
+        <path d="M40 15 L55 40 L40 65 L25 40 Z" fill="#0098EA"/>
+        <circle cx="40" cy="40" r="8" fill="#0098EA"/>
+    </svg>
+)
+
+const TaskSolana = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="80" height="80" rx="20" fill="#000"/>
+        <defs>
+            <linearGradient id="solanaGrad" x1="10" y1="10" x2="70" y2="70" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#9945FF"/>
+                <stop offset="0.5" stopColor="#14F195"/>
+                <stop offset="1" stopColor="#9945FF"/>
+            </linearGradient>
+        </defs>
+        <circle cx="40" cy="40" r="25" stroke="url(#solanaGrad)" strokeWidth="4" fill="none"/>
+        <circle cx="40" cy="40" r="8" fill="url(#solanaGrad)"/>
+        <path d="M30 35 L40 25 L50 35 L40 45 Z" fill="url(#solanaGrad)"/>
+    </svg>
+)
+
+const TaskBybit = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="80" height="80" rx="20" fill="#fff"/>
+        <rect x="10" y="10" width="60" height="60" rx="10" fill="#000"/>
+        <text x="40" y="50" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="bold">B</text>
+    </svg>
+)
+
+const TaskBitget = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="80" height="80" rx="20" fill="#000"/>
+        <circle cx="40" cy="40" r="22" stroke="#00D9FF" strokeWidth="3" fill="none"/>
+        <circle cx="40" cy="40" r="12" stroke="#00D9FF" strokeWidth="2" fill="none"/>
+        <circle cx="40" cy="40" r="4" fill="#00D9FF"/>
+    </svg>
+)
+
+const TaskOKX = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="80" height="80" rx="20" fill="#000"/>
+        <rect x="20" y="25" width="40" height="30" rx="5" fill="#fff"/>
+        <circle cx="30" cy="40" r="6" fill="#000"/>
+        <circle cx="50" cy="40" r="6" fill="#000"/>
     </svg>
 )
 
