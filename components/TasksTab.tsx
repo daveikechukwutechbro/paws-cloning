@@ -305,17 +305,17 @@ const TasksTab = () => {
     const partnerTasks: Task[] = [
         {
             id: 'partner_ton',
-            icon: TaskTON,
+            icon: 'https://i.imgur.com/PjjpDKL.png',
             title: 'Visit TON',
             description: 'Explore the TON ecosystem',
             reward: 500000,
-            link: 'https://ton.org/en',
+            link: 'https://ton.org/en/wallets',
             type: 'social',
         },
         {
             id: 'partner_solana',
-            icon: TaskSolana,
-            title: 'Learn Solana',
+            icon: 'https://i.imgur.com/3dp5q8h.png',
+            title: 'Visit Solana',
             description: 'Discover the Solana blockchain',
             reward: 500000,
             link: 'https://solana.com',
@@ -323,8 +323,8 @@ const TasksTab = () => {
         },
         {
             id: 'partner_bybit',
-            icon: TaskBybit,
-            title: 'Explore Bybit',
+            icon: 'https://i.imgur.com/G6oCzzm.png',
+            title: 'Visit Bybit',
             description: 'Trade on Bybit exchange',
             reward: 500000,
             link: 'https://bybit.com',
@@ -332,8 +332,8 @@ const TasksTab = () => {
         },
         {
             id: 'partner_bitget',
-            icon: TaskBitget,
-            title: 'Discover Bitget',
+            icon: 'https://i.imgur.com/0FsWwee.png',
+            title: 'Visit Bitget',
             description: 'Copy trading on Bitget',
             reward: 500000,
             link: 'https://www.bitgetapp.com',
@@ -341,7 +341,7 @@ const TasksTab = () => {
         },
         {
             id: 'partner_okx',
-            icon: TaskOKX,
+            icon: 'https://i.imgur.com/B4BF1fQ.png',
             title: 'Visit OKX',
             description: 'Trade on OKX exchange',
             reward: 500000,
