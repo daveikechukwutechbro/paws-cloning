@@ -9,7 +9,8 @@
 
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import Image from 'next/image'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { purchaseNFT, getLocalNFTs } from '@/utils/userUtils'
 import { PurchasedNFT, NFTTier } from '@/utils/types'
@@ -19,6 +20,16 @@ const ITEMS_PER_PAGE = 24
 
 const TIER_NAMES = ['Astral', 'Nebula', 'Void', 'Phantom', 'Crimson', 'Storm', 'Frost', 'Obsidian', 'Solar', 'Umbra']
 const ADJECTIVES = ['Ancient', 'Blazing', 'Celestial', 'Dark', 'Ethereal', 'Frozen', 'Golden', 'Hidden', 'Iron', 'Jade', 'Karmic', 'Lunar', 'Mystic', 'Night', 'Omega', 'Primal', 'Quantum', 'Royal', 'Shadow', 'Thunder']
+
+type GeneratedNFT = {
+    id: string
+    name: string
+    tier: NFTTier
+    basePrice: number
+    icon: string
+    fullImage: string
+    imageIdx: number
+}
 
 function getTier(index: number): NFTTier {
     if (index <= 1425) return 'Common'
@@ -39,8 +50,26 @@ function nftThumbUrl(index: number): string {
 }
 
 function nftFullUrl(index: number): string {
-    // Full-size PNGs are not present in this repo — use the available webp thumbs instead
-    return `/nfts/thumbs/${index}.webp`
+    // Use the available high-resolution PNG asset for full preview
+    return `/nfts/images/${index}.png`
+}
+
+function getSuggestedBackgrounds(index: number): string[] {
+    const offsets = [3, 7, 13, 21]
+    return offsets.map((offset) => {
+        let candidate = index + offset
+        if (candidate > TOTAL_NFTS) candidate = ((candidate - 1) % TOTAL_NFTS) + 1
+        return `/nfts/images/${candidate}.png`
+    })
+}
+
+function getRecommendedNFTs(baseNFT: GeneratedNFT, count = 3): GeneratedNFT[] {
+    const offsets = [5, 11, 17, 23, 29]
+    return offsets.slice(0, count).map((offset) => {
+        let candidate = baseNFT.imageIdx + offset
+        if (candidate > TOTAL_NFTS) candidate = ((candidate - 1) % TOTAL_NFTS) + 1
+        return generateNFT(candidate)
+    })
 }
 
 function generateNFT(index: number) {
@@ -109,7 +138,7 @@ const RECEIVING_WALLET_ADDRESS = 'UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl
 const NFTTab = () => {
     const { user, refreshUser } = useUser()
     const [activeSubTab, setActiveSubTab] = useState<'mint' | 'collection'>('mint')
-    const [selectedNFT, setSelectedNFT] = useState<any>(null)
+    const [selectedNFT, setSelectedNFT] = useState<GeneratedNFT | null>(null)
     const [txHash, setTxHash] = useState('')
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -118,6 +147,8 @@ const NFTTab = () => {
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE)
     const [prices, setPrices] = useState<Record<string, number>>({})
     const [ownedNFTs, setOwnedNFTs] = useState<PurchasedNFT[]>([])
+    const [backgroundSuggestions, setBackgroundSuggestions] = useState<string[]>([])
+    const [backgroundRotationIndex, setBackgroundRotationIndex] = useState(0)
     const [selectedTierFilter, setSelectedTierFilter] = useState<NFTTier | 'all'>('all')
     const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -192,12 +223,18 @@ const NFTTab = () => {
         return counts
     }, [])
 
-    const handleMint = (nft: any) => {
+    const handleMint = (nft: GeneratedNFT) => {
         setSelectedNFT(nft)
         setTxHash('')
         setError(null)
         setSuccess(false)
+        setBackgroundSuggestions(getSuggestedBackgrounds(nft.imageIdx || parseInt(nft.id.replace('nft_', ''))))
+        setBackgroundRotationIndex(0)
     }
+
+    const recommendedNFTs = useMemo(() => {
+        return selectedNFT ? getRecommendedNFTs(selectedNFT) : []
+    }, [selectedNFT])
 
     const handlePurchase = async () => {
         if (!selectedNFT || !user?.id || !txHash) {
@@ -244,6 +281,16 @@ const NFTTab = () => {
         navigator.clipboard.writeText(RECEIVING_WALLET_ADDRESS)
         setCopied(true)
     }
+
+    useEffect(() => {
+        if (!selectedNFT) return
+        const visibleSuggestions = backgroundSuggestions.length ? backgroundSuggestions : [selectedNFT.fullImage || selectedNFT.icon]
+        setBackgroundRotationIndex(0)
+        const rotation = setInterval(() => {
+            setBackgroundRotationIndex((prev) => (prev + 1) % visibleSuggestions.length)
+        }, 3500)
+        return () => clearInterval(rotation)
+    }, [selectedNFT, backgroundSuggestions])
 
     const handleBackToMint = () => {
         setSelectedNFT(null)
@@ -340,12 +387,13 @@ const NFTTab = () => {
                                     >
                                         <div className="relative">
                                             <div className={`absolute -inset-1 bg-gradient-to-r ${tier === 'Common' ? 'from-gray-400 to-gray-600' : tier === 'Rare' ? 'from-blue-400 to-cyan-400' : tier === 'Epic' ? 'from-purple-400 to-pink-400' : 'from-yellow-400 to-orange-400'} opacity-10 blur-xl`} />
-                                            <div className="w-full aspect-square overflow-hidden">
-                                                <img
+                                            <div className="relative w-full aspect-square overflow-hidden flex items-center justify-center bg-black/10">
+                                                <Image
                                                     src={nft.icon}
                                                     alt={nft.name}
-                                                    className="w-full h-full object-cover"
-                                                    loading="lazy"
+                                                    fill
+                                                    className="object-contain object-center"
+                                                    sizes="120px"
                                                 />
                                             </div>
                                             <div className="p-2">
@@ -414,8 +462,14 @@ const NFTTab = () => {
                                                 className={`bg-gradient-to-r ${TIER_BG[nftTier]} border ${TIER_BORDER[nftTier]} rounded-2xl p-4 ${TIER_GLOW[nftTier]} shadow-lg`}
                                             >
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-black/40">
-                                                        <img src={imageSrc} alt={nft.name} className="w-full h-full object-cover" loading="lazy" />
+                                                    <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-black/40 flex items-center justify-center">
+                                                        <Image
+                                                            src={imageSrc}
+                                                            alt={nft.name}
+                                                            fill
+                                                            className="object-contain object-center"
+                                                            sizes="64px"
+                                                        />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <h3 className="font-bold text-white text-base truncate">{nft.name}</h3>
@@ -467,20 +521,50 @@ const NFTTab = () => {
                                     </div>
                                 </div>
 
-                                <div className="p-5 space-y-4">
-                                    <div className={`bg-gradient-to-r ${TIER_BG[selectedNFT.tier]} border ${TIER_BORDER[selectedNFT.tier]} rounded-xl p-4`}>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-16 h-16 rounded-xl overflow-hidden bg-black/40 shrink-0">
-                                                <img src={selectedNFT.fullImage || selectedNFT.icon} alt={selectedNFT.name} className="w-full h-full object-cover" />
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-white text-base">{selectedNFT.name}</div>
-                                                <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border mt-0.5 ${TIER_COLORS[selectedNFT.tier]}`}>
-                                                    {selectedNFT.tier}
-                                                </span>
-                                                <div className="text-lg font-bold text-white mt-1">
-                                                    {(prices[selectedNFT.id] || selectedNFT.basePrice).toFixed(2)} TON
+                                <div className="p-5 space-y-5">
+                                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f10]">
+                                        <div className="relative w-full h-80">
+                                            <Image
+                                                src={selectedNFT.fullImage || selectedNFT.icon}
+                                                alt={selectedNFT.name}
+                                                fill
+                                                className="object-contain bg-black"
+                                                sizes="600px"
+                                            />
+                                        </div>
+                                        <div className="absolute inset-x-0 bottom-0 bg-black/50 p-3 text-xs text-gray-300">
+                                            Full PNG preview — high-quality, immersive view for collectors.
+                                        </div>
+                                    </div>
+                                    <div className={`relative overflow-hidden rounded-3xl border ${TIER_BORDER[selectedNFT.tier]} bg-gradient-to-br ${TIER_BG[selectedNFT.tier]} p-4`}>
+                                        <div className="absolute inset-0 opacity-40 blur-2xl" style={{ backgroundImage: `url(${backgroundSuggestions[backgroundRotationIndex] || selectedNFT.fullImage || selectedNFT.icon})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                                        <div className="absolute inset-0 bg-black/45" />
+                                        <div className="relative flex flex-col gap-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-20 h-20 rounded-3xl overflow-hidden bg-black/30 shrink-0 flex items-center justify-center border border-white/10">
+                                                    <div className="relative w-full h-full">
+                                                    <Image
+                                                        src={selectedNFT.fullImage || selectedNFT.icon}
+                                                        alt={selectedNFT.name}
+                                                        fill
+                                                        className="object-contain object-center"
+                                                        sizes="80px"
+                                                    />
                                                 </div>
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-white text-base">{selectedNFT.name}</div>
+                                                    <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border mt-0.5 ${TIER_COLORS[selectedNFT.tier]}`}>
+                                                        {selectedNFT.tier}
+                                                    </span>
+                                                    <div className="text-lg font-bold text-white mt-1">
+                                                        {(prices[selectedNFT.id] || selectedNFT.basePrice).toFixed(2)} TON
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="rounded-3xl border border-white/10 bg-black/30 p-3">
+                                                <div className="text-xs text-gray-300">Full-view PNG preview</div>
+                                                <div className="text-sm font-medium text-white mt-1">High resolution artwork shown for strong purchase appeal and collector engagement.</div>
                                             </div>
                                         </div>
                                     </div>
@@ -500,6 +584,64 @@ const NFTTab = () => {
                                         <div className="flex items-center gap-2 text-[#a855f7]">
                                             <span>💡</span>
                                             <span className="text-sm">Send exactly {(prices[selectedNFT.id] || selectedNFT.basePrice).toFixed(2)} TON</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between text-sm font-semibold text-white">
+                                            <span>Recommended for you</span>
+                                            <span className="text-xs text-gray-400">Similar collector favorites</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {recommendedNFTs.map((nft) => (
+                                                <button
+                                                    key={nft.id}
+                                                    type="button"
+                                                    onClick={() => handleMint(nft)}
+                                                    className="group bg-[#151516] rounded-2xl border border-[#2d2d2e] overflow-hidden text-left transition hover:border-[#a855f7] focus:outline-none focus:ring-2 focus:ring-[#a855f7]/50"
+                                                >
+                                                    <div className="relative w-full h-20 bg-black/20">
+                                                        <Image
+                                                            src={nft.icon}
+                                                            alt={nft.name}
+                                                            fill
+                                                            className="object-contain object-center"
+                                                            sizes="80px"
+                                                        />
+                                                    </div>
+                                                    <div className="p-2">
+                                                        <div className="text-[10px] text-gray-400 leading-tight truncate group-hover:text-white">{nft.name}</div>
+                                                        <div className={`mt-1 text-[9px] font-semibold px-2 py-0.5 rounded-full ${TIER_COLORS[nft.tier]}`}>{nft.tier}</div>
+                                                        <div className="mt-2 text-xs text-white font-semibold">{(prices[nft.id] || nft.basePrice).toFixed(2)} TON</div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-xs text-gray-300">
+                                            <span>Suggested rotating backgrounds</span>
+                                            <span>{backgroundSuggestions.length} options</span>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {backgroundSuggestions.map((src, idx) => (
+                                                <button
+                                                    key={src}
+                                                    onClick={() => setBackgroundRotationIndex(idx)}
+                                                    className={`rounded-2xl overflow-hidden border transition ${idx === backgroundRotationIndex ? 'border-white/70' : 'border-white/10'}`}
+                                                >
+                                                    <div className="relative w-full h-16">
+                                                        <Image
+                                                            src={src}
+                                                            alt={`Suggested background ${idx + 1}`}
+                                                            fill
+                                                            className="object-cover"
+                                                            sizes="64px"
+                                                        />
+                                                    </div>
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
 

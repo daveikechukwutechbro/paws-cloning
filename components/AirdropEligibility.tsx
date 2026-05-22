@@ -15,6 +15,8 @@ import { checkAirdropEligibility, AirdropStatus } from '@/utils/airdropEligibili
 import { getCurrentUserCount, formatUserCount } from '@/utils/userGrowth'
 import { isWalletConnected } from '@/utils/tonService'
 
+const AIRDROP_TARGET = 2_000_000
+
 const AirdropEligibility = () => {
     const { user } = useUser()
     const [status, setStatus] = useState<AirdropStatus>({
@@ -25,6 +27,7 @@ const AirdropEligibility = () => {
         progress: 0
     })
     const [userCount, setUserCount] = useState(0)
+    const targetProgress = Math.min(100, Math.floor((userCount / AIRDROP_TARGET) * 100))
 
     useEffect(() => {
         setUserCount(getCurrentUserCount())
@@ -69,11 +72,15 @@ const AirdropEligibility = () => {
                     <span className="text-sm font-bold text-[#4c9ce2] uppercase tracking-wider">Airdrop Eligibility</span>
                     <div className="ml-auto flex items-center gap-1 bg-[#4c9ce2]/10 px-2 py-0.5 rounded-full">
                         <div className="w-1.5 h-1.5 rounded-full bg-[#4c9ce2] animate-pulse" />
-                        <span className="text-[10px] font-bold text-[#4c9ce2]">{formatUserCount(userCount)} users</span>
+                        <span className="text-[10px] font-bold text-[#4c9ce2]">{formatUserCount(userCount)} / {formatUserCount(AIRDROP_TARGET)}</span>
                     </div>
                 </div>
 
                 {/* Progress bar */}
+                <div className="mb-2 flex items-center justify-between text-xs text-[#d1d5db]">
+                    <span>Target user growth toward 2M</span>
+                    <span>{targetProgress}%</span>
+                </div>
                 <div className="w-full bg-[#ffffff0d] rounded-full h-2.5 mb-3 overflow-hidden">
                     <div
                         className="h-full rounded-full transition-all duration-700 ease-out bg-gradient-to-r from-[#4c9ce2] to-[#22c55e]"

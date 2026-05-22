@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { getUserTier, getEstimatedRank, getNextTier, getProgressToNextTier, RANK_TIERS } from '@/utils/rankingSystem'
+import { getCurrentUserCount, formatUserCount } from '@/utils/userGrowth'
 
 type LeaderboardItem = {
     username: string
@@ -159,7 +160,8 @@ const getMedal = (place: number, tierLabel: string) => {
     return null
 }
 
-const totalUsers = 23_253_686
+const totalUsers = 2_000_000
+const totalUserTarget = 2_000_000
 
 // Name pools per tier
 const namePools: Record<string, string[]> = {
@@ -234,6 +236,13 @@ const LeaderboardTab = () => {
     const { user, loading } = useUser()
     const [userRank, setUserRank] = useState('#--')
     const [timeWindows, setTimeWindows] = useState<Record<string, number>>({})
+    const [currentUsers, setCurrentUsers] = useState(getCurrentUserCount())
+    const totalUserProgress = Math.min(100, Math.floor((currentUsers / totalUserTarget) * 100))
+
+    useEffect(() => {
+        const interval = setInterval(() => setCurrentUsers(getCurrentUserCount()), 30000)
+        return () => clearInterval(interval)
+    }, [])
 
     // Update time windows every 3 seconds to trigger re-renders
     useEffect(() => {
@@ -347,8 +356,12 @@ const LeaderboardTab = () => {
                     <h1 className="text-2xl font-bold mb-2">Leaderboard</h1>
                     <div className="w-full mt-2 px-4 py-2 flex justify-between rounded-lg text-sm font-medium text-[#fefefe] bg-[#151516] border border-[#2d2d2e]">
                         <span>Total Users</span>
-                        <span>{totalUsers.toLocaleString()}</span>
+                        <span>{formatUserCount(currentUsers)} / {totalUserTarget.toLocaleString()}</span>
                     </div>
+                    <div className="w-full mt-2 rounded-full h-2 bg-[#ffffff0d] overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-[#4c9ce2] to-[#22c55e] transition-all duration-700" style={{ width: `${totalUserProgress}%` }} />
+                    </div>
+                    <div className="w-full mt-1 text-[11px] text-[#868686] text-right">{totalUserProgress}% of target</div>
                 </div>
 
                 {/* User Card */}
@@ -370,7 +383,7 @@ const LeaderboardTab = () => {
                         </div>
                         <div className="text-right">
                             <div className="text-lg font-bold text-[#fefefe]">{userRank}</div>
-                            <div className="text-[10px] text-[#868686]">of {totalUsers.toLocaleString()}</div>
+                            <div className="text-[10px] text-[#868686]">Target {totalUserTarget.toLocaleString()} • {totalUserProgress}% reached</div>
                         </div>
                     </div>
 

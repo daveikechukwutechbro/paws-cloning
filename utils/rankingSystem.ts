@@ -111,7 +111,7 @@ export function getProgressToNextTier(balance: number): number {
 }
 
 export function getEstimatedRank(balance: number): string {
-    const totalUsers = 23_253_686
+    const totalUsers = 2_000_000
     const distribution: { tierMin: number; tierMax: number; users: number }[] = [
         { tierMin: 0, tierMax: 100_000, users: Math.floor(totalUsers * 0.70) },
         { tierMin: 100_000, tierMax: 500_000, users: Math.floor(totalUsers * 0.18) },

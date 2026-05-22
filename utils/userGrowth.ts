@@ -2,13 +2,13 @@
 
 /**
  * Simulates organic user growth for the app.
- * Starts at 1.1M, reaches 3M over ~2 months.
+ * Starts at 1.4M, reaches 2M over ~2 months.
  * Uses an S-curve (sigmoid) for realistic growth feel.
  */
 
 const START_TIME = new Date('2026-05-01').getTime()
-const START_USERS = 1_100_000
-const END_USERS = 3_000_000
+const START_USERS = 1_400_000
+const END_USERS = 2_000_000
 const GROWTH_DURATION_MS = 62 * 24 * 60 * 60 * 1000 // ~2 months
 
 function sigmoid(t: number): number {
