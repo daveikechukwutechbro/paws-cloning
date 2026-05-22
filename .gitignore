@@ -36,8 +36,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# generated NFT images (2.9GB)
-/public/nfts/
+# full-size NFT images (not committed, too large)
+/public/nfts/images/
+
+# thumbnails are committed (small)
 
 # hashlips art engine (cloned dependency)
 /hashlips_art_engine/

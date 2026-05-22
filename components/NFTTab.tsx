@@ -34,8 +34,12 @@ function getBasePrice(index: number): number {
     return Math.round((basePrices[tier] + variation) * 100) / 100
 }
 
-function nftImageUrl(index: number, size: 'thumb' | 'full' = 'thumb'): string {
-    return `/api/nft-images/${index}?size=${size}`
+function nftThumbUrl(index: number): string {
+    return `/nfts/thumbs/${index}.webp`
+}
+
+function nftFullUrl(index: number): string {
+    return `/nfts/images/${index}.png`
 }
 
 function generateNFT(index: number) {
@@ -48,8 +52,8 @@ function generateNFT(index: number) {
         name,
         tier,
         basePrice: getBasePrice(index),
-        icon: nftImageUrl(index),
-        fullImage: nftImageUrl(index, 'full'),
+        icon: nftThumbUrl(index),
+        fullImage: nftFullUrl(index),
         imageIdx: index
     }
 }
@@ -402,7 +406,7 @@ const NFTTab = () => {
                                     {ownedNFTs.map((nft, idx) => {
                                         const nftTier = nft.tier
                                         const imageIdx = parseInt(nft.nftId.replace('nft_', ''))
-                                        const imageSrc = imageIdx ? nftImageUrl(imageIdx) : nftImageUrl(1)
+                                        const imageSrc = imageIdx ? nftThumbUrl(imageIdx) : nftThumbUrl(1)
                                         return (
                                             <div
                                                 key={`${nft.nftId}-${idx}`}
