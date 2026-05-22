@@ -120,6 +120,16 @@ const TIER_BG: Record<NFTTier, string> = {
     Legendary: 'from-yellow-900 to-orange-800'
 }
 
+// Palette gradients (hex pairs) to alternate card backgrounds across the grid
+const PALETTE_GRADIENTS: [string, string][] = [
+    ['#06202A', '#075985'], // deep cyan
+    ['#2A0436', '#7C3AED'], // deep purple
+    ['#04260F', '#059669'], // deep green
+    ['#35270A', '#F59E0B'], // deep yellow
+    ['#061233', '#4F46E5'], // indigo
+    ['#2B021F', '#E11D48']  // rose
+]
+
 const TIER_BORDER: Record<NFTTier, string> = {
     Common: 'border-gray-700',
     Rare: 'border-blue-700',
@@ -323,13 +333,13 @@ const NFTTab = () => {
             {/* Header */}
             <div className="px-4 pt-4 pb-2 shrink-0">
                 <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#a855f7] to-[#6366f1] flex items-center justify-center shadow-lg shadow-purple-500/30">
                             <span className="text-xl">💎</span>
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold text-white">NFT Gallery</h1>
-                            <p className="text-xs text-gray-400">{TOTAL_NFTS} unique HashLips NFTs</p>
+                            <p className="text-xs text-gray-400">Unique HashLips NFT collection</p>
                         </div>
                     </div>
                     <button
@@ -369,7 +379,7 @@ const NFTTab = () => {
                                         : 'bg-[#1f1f20] text-gray-400 border border-[#2d2d2e]'
                                 }`}
                             >
-                                All ({TOTAL_NFTS})
+                                All
                             </button>
                             {tierOrder.map(tier => (
                                 <button
@@ -385,38 +395,41 @@ const NFTTab = () => {
                                             : ''
                                     }`}
                                 >
-                                    {tier} ({tierCounts[tier]})
+                                    {tier}
                                 </button>
                             ))}
                         </div>
 
                         {/* NFT Grid */}
-                        <div className="grid grid-cols-3 gap-2.5">
-                            {filteredNFTs.map((nft) => {
+                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                            {filteredNFTs.map((nft, idx) => {
                                 const owned = ownedIds.has(nft.id)
                                 const currentPrice = prices[nft.id] || nft.basePrice
                                 const priceChange = ((currentPrice - nft.basePrice) / nft.basePrice * 100)
                                 const isUp = priceChange >= 0
                                 const tier = nft.tier
+                                const [gFrom, gTo] = PALETTE_GRADIENTS[idx % PALETTE_GRADIENTS.length]
                                 return (
                                     <div
                                         key={nft.id}
-                                        className={`relative bg-gradient-to-b ${TIER_BG[tier]} border ${TIER_BORDER[tier]} rounded-xl overflow-hidden ${TIER_GLOW[tier]} shadow-lg ${owned ? 'opacity-60' : 'hover:scale-[1.02] active:scale-95 transition-all cursor-pointer'}`}
                                         onClick={() => !owned && handleMint(nft)}
+                                        className={`relative border ${TIER_BORDER[tier]} rounded-xl overflow-hidden ${TIER_GLOW[tier]} shadow-lg ${owned ? 'opacity-60' : 'hover:scale-[1.02] active:scale-95 transition-all cursor-pointer'}`}
+                                        style={{ backgroundImage: `linear-gradient(180deg, ${gFrom}, ${gTo})` }}
                                     >
                                         <div className="relative">
                                             <div className={`absolute -inset-1 bg-gradient-to-r ${tier === 'Common' ? 'from-gray-400 to-gray-600' : tier === 'Rare' ? 'from-blue-400 to-cyan-400' : tier === 'Epic' ? 'from-purple-400 to-pink-400' : 'from-yellow-400 to-orange-400'} opacity-10 blur-xl`} />
-                                            <div className="relative w-full aspect-square overflow-hidden flex items-center justify-center bg-black/10">
+                                            <div className="relative w-full h-48 overflow-hidden flex items-center justify-center bg-black/10">
                                                 <Image
                                                     src={nft.icon}
                                                     alt={nft.name}
                                                     fill
-                                                    className="object-cover object-center"
-                                                    sizes="120px"
+                                                    className="object-contain object-center"
+                                                    sizes="240px"
+                                                    quality={90}
                                                 />
                                             </div>
                                             <div className="p-2">
-                                                <h3 className="text-xs font-bold text-white truncate leading-tight">{nft.name}</h3>
+                                                <h3 className="text-sm font-bold text-white truncate leading-tight">{nft.name}</h3>
                                                 <span className={`inline-block text-[8px] font-semibold px-1.5 py-0.5 rounded-full border mt-0.5 ${TIER_COLORS[tier]}`}>
                                                     {tier}
                                                 </span>
@@ -444,7 +457,7 @@ const NFTTab = () => {
                             {visibleCount < TOTAL_NFTS ? (
                                 <span className="text-xs text-gray-500 animate-pulse">Loading more...</span>
                             ) : (
-                                <span className="text-xs text-gray-500">Showing all {TOTAL_NFTS} NFTs</span>
+                                <span className="text-xs text-gray-500">Showing full collection</span>
                             )}
                         </div>
                     </>
@@ -481,15 +494,16 @@ const NFTTab = () => {
                                                 className={`bg-gradient-to-r ${TIER_BG[nftTier]} border ${TIER_BORDER[nftTier]} rounded-2xl p-4 ${TIER_GLOW[nftTier]} shadow-lg`}
                                             >
                                                 <div className="flex items-center gap-4">
-                                                    <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-black/40 flex items-center justify-center">
-                                                        <Image
-                                                            src={imageSrc}
-                                                            alt={nft.name}
-                                                            fill
-                                                            className="object-cover object-center"
-                                                            sizes="64px"
-                                                        />
-                                                    </div>
+                                                    <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-black/40 flex items-center justify-center">
+                                                                    <Image
+                                                                        src={imageSrc}
+                                                                        alt={nft.name}
+                                                                        fill
+                                                                        className="object-contain object-center"
+                                                                        sizes="96px"
+                                                                        quality={90}
+                                                                    />
+                                                                </div>
                                                     <div className="flex-1 min-w-0">
                                                         <h3 className="font-bold text-white text-base truncate">{nft.name}</h3>
                                                         <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border mt-0.5 ${TIER_COLORS[nftTier]}`}>
@@ -542,13 +556,14 @@ const NFTTab = () => {
 
                                 <div className="p-5 space-y-5">
                                     <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f10]">
-                                        <div className="relative w-full h-96 bg-black">
+                                        <div className="relative w-full h-96 bg-black flex items-center justify-center">
                                             <Image
                                                 src={selectedNFT.fullImage || selectedNFT.icon}
                                                 alt={selectedNFT.name}
                                                 fill
-                                                className="object-cover object-center"
+                                                className="object-contain object-center"
                                                 sizes="600px"
+                                                quality={90}
                                                 priority
                                             />
                                         </div>
