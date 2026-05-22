@@ -34,6 +34,10 @@ function getBasePrice(index: number): number {
     return Math.round((basePrices[tier] + variation) * 100) / 100
 }
 
+function nftImageUrl(index: number, size: 'thumb' | 'full' = 'thumb'): string {
+    return `/api/nft-images/${index}?size=${size}`
+}
+
 function generateNFT(index: number) {
     const tier = getTier(index)
     const adj = ADJECTIVES[index % ADJECTIVES.length]
@@ -44,7 +48,8 @@ function generateNFT(index: number) {
         name,
         tier,
         basePrice: getBasePrice(index),
-        icon: `/nfts/images/${index}.png`,
+        icon: nftImageUrl(index),
+        fullImage: nftImageUrl(index, 'full'),
         imageIdx: index
     }
 }
@@ -397,7 +402,7 @@ const NFTTab = () => {
                                     {ownedNFTs.map((nft, idx) => {
                                         const nftTier = nft.tier
                                         const imageIdx = parseInt(nft.nftId.replace('nft_', ''))
-                                        const imageSrc = imageIdx ? `/nfts/images/${imageIdx}.png` : '/nfts/images/1.png'
+                                        const imageSrc = imageIdx ? nftImageUrl(imageIdx) : nftImageUrl(1)
                                         return (
                                             <div
                                                 key={`${nft.nftId}-${idx}`}
@@ -461,7 +466,7 @@ const NFTTab = () => {
                                     <div className={`bg-gradient-to-r ${TIER_BG[selectedNFT.tier]} border ${TIER_BORDER[selectedNFT.tier]} rounded-xl p-4`}>
                                         <div className="flex items-center gap-4">
                                             <div className="w-16 h-16 rounded-xl overflow-hidden bg-black/40 shrink-0">
-                                                <img src={selectedNFT.icon} alt={selectedNFT.name} className="w-full h-full object-cover" />
+                                                <img src={selectedNFT.fullImage || selectedNFT.icon} alt={selectedNFT.name} className="w-full h-full object-cover" />
                                             </div>
                                             <div>
                                                 <div className="font-bold text-white text-base">{selectedNFT.name}</div>

@@ -1,0 +1,136 @@
+// components/AirdropEligibility.tsx
+
+/**
+ * This project was developed by Nikandr Surkov.
+ *
+ * YouTube: https://www.youtube.com/@NikandrSurkov
+ * GitHub: https://github.com/nikandr-surkov
+ */
+
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useUser } from '@/contexts/UserContext'
+import { checkAirdropEligibility, AirdropStatus } from '@/utils/airdropEligibility'
+import { getCurrentUserCount, formatUserCount } from '@/utils/userGrowth'
+import { isWalletConnected } from '@/utils/tonService'
+
+const AirdropEligibility = () => {
+    const { user } = useUser()
+    const [status, setStatus] = useState<AirdropStatus>({
+        miningSessions: 0,
+        miningSessionsMet: false,
+        hasTonTransaction: false,
+        isEligible: false,
+        progress: 0
+    })
+    const [userCount, setUserCount] = useState(0)
+
+    useEffect(() => {
+        setUserCount(getCurrentUserCount())
+        const interval = setInterval(() => {
+            setUserCount(getCurrentUserCount())
+        }, 30000)
+        return () => clearInterval(interval)
+    }, [])
+
+    useEffect(() => {
+        const timerKey = user?.id ? `lastClaim_${user.id}` : 'lastClaim_default'
+        const savedLastClaim = localStorage.getItem(timerKey)
+
+        let miningSessions = 0
+        if (savedLastClaim) {
+            const firstClaimTime = parseInt(savedLastClaim)
+            const elapsed = Date.now() - firstClaimTime
+            miningSessions = Math.min(Math.floor(elapsed / 3600000), 200)
+        }
+
+        const lastTx = localStorage.getItem('last_ton_transaction')
+
+        setStatus(checkAirdropEligibility(miningSessions, lastTx))
+    }, [user])
+
+    const handleConnectForAirdrop = () => {
+        const tg = (window as any).Telegram?.WebApp
+        if (tg?.openLink) {
+            tg.openLink('https://t.me/Pawscloudminebot?start=airdrop_check')
+        }
+    }
+
+    return (
+        <div className={`rounded-xl p-4 relative overflow-hidden border transition-all ${
+            status.isEligible
+                ? 'bg-gradient-to-r from-[#22c55e]/20 via-[#4c9ce2]/20 to-[#f59e0b]/20 border-[#22c55e]/30'
+                : 'bg-[#ffffff0d] border-[#2d2d2e]'
+        }`}>
+            <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🪂</span>
+                    <span className="text-sm font-bold text-[#4c9ce2] uppercase tracking-wider">Airdrop Eligibility</span>
+                    <div className="ml-auto flex items-center gap-1 bg-[#4c9ce2]/10 px-2 py-0.5 rounded-full">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#4c9ce2] animate-pulse" />
+                        <span className="text-[10px] font-bold text-[#4c9ce2]">{formatUserCount(userCount)} users</span>
+                    </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-[#ffffff0d] rounded-full h-2.5 mb-3 overflow-hidden">
+                    <div
+                        className="h-full rounded-full transition-all duration-700 ease-out bg-gradient-to-r from-[#4c9ce2] to-[#22c55e]"
+                        style={{ width: `${status.progress}%` }}
+                    />
+                </div>
+
+                {/* Requirements */}
+                <div className="space-y-2 mb-3">
+                    <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                            <span className={`w-4 h-4 flex items-center justify-center ${
+                                status.miningSessionsMet ? 'text-[#22c55e]' : 'text-gray-500'
+                            }`}>
+                                {status.miningSessionsMet ? '✓' : '⛏️'}
+                            </span>
+                            <span className={status.miningSessionsMet ? 'text-[#22c55e]' : 'text-gray-400'}>
+                                {status.miningSessions}/100 Mining Sessions
+                            </span>
+                        </div>
+                        <span className="text-gray-500">
+                            {status.miningSessionsMet ? '✅' : `${Math.max(0, 100 - status.miningSessions)} left`}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                            <span className={`w-4 h-4 flex items-center justify-center ${
+                                status.hasTonTransaction ? 'text-[#22c55e]' : 'text-gray-500'
+                            }`}>
+                                {status.hasTonTransaction ? '✓' : '💎'}
+                            </span>
+                            <span className={status.hasTonTransaction ? 'text-[#22c55e]' : 'text-gray-400'}>
+                                TON Transaction
+                            </span>
+                        </div>
+                        <span className="text-gray-500">
+                            {status.hasTonTransaction ? '✅' : 'Required'}
+                        </span>
+                    </div>
+                </div>
+
+                {status.isEligible ? (
+                    <div className="bg-[#22c55e]/20 border border-[#22c55e]/30 rounded-lg p-3 text-center">
+                        <div className="text-sm font-bold text-[#22c55e]">✓ You&apos;re Eligible!</div>
+                        <div className="text-xs text-gray-400 mt-0.5">Airdrop will be distributed after TGE 2</div>
+                    </div>
+                ) : (
+                    <button
+                        onClick={handleConnectForAirdrop}
+                        className="w-full bg-gradient-to-r from-[#4c9ce2] to-[#007aff] text-white text-sm font-bold py-2.5 rounded-lg"
+                    >
+                        Complete Requirements
+                    </button>
+                )}
+            </div>
+        </div>
+    )
+}
+
+export default AirdropEligibility

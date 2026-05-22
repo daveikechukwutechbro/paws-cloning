@@ -12,6 +12,7 @@
 import CheckFootprint from '@/components/CheckFootprint'
 import NavigationBar from '@/components/NavigationBar'
 import TabContainer from '@/components/TabContainer'
+import InAppNotifications from '@/components/InAppNotifications'
 import { TabProvider } from '@/contexts/TabContext'
 import { UserProvider, useUser } from '@/contexts/UserContext'
 import { useEffect } from 'react'
@@ -29,6 +30,7 @@ function AppContent() {
             <CheckFootprint />
             <TabContainer />
             <NavigationBar />
+            <InAppNotifications />
         </main>
     )
 }

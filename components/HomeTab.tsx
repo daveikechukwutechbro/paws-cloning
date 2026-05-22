@@ -25,6 +25,7 @@ import { db } from '@/utils/firebaseClient'
 import { getUserTier, getNextTier, getProgressToNextTier, getEstimatedRank, RANK_TIERS } from '@/utils/rankingSystem'
 import TokenomicsModal from '@/components/TokenomicsModal'
 import MiningUpgradeShop from '@/components/MiningUpgradeShop'
+import AirdropEligibility from '@/components/AirdropEligibility'
 import { DEFAULT_MINING_RATE, getMiningBonusRate, ActiveMiningUpgrade } from '@/utils/miningUpgrades'
 
 const HomeTab = () => {
@@ -431,31 +432,9 @@ const HomeTab = () => {
                     <ArrowRight className="w-6 h-6 text-gray-400" />
                 </button>
 
-                {/* Airdrop Coming Soon Banner */}
-                <div className="mt-3 bg-gradient-to-r from-[#22c55e]/20 via-[#4c9ce2]/20 to-[#f59e0b]/20 border border-[#22c55e]/30 rounded-xl p-4 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[#22c55e]/5 animate-pulse" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xl">✅</span>
-                            <span className="text-sm font-bold text-[#22c55e] uppercase tracking-wider">TGE 1 COMPLETE</span>
-                            <div className="ml-auto flex items-center gap-1 bg-[#f59e0b]/20 px-2 py-0.5 rounded-full">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] animate-pulse" />
-                                <span className="text-[10px] font-bold text-[#f59e0b]">TGE 2 COMING</span>
-                            </div>
-                        </div>
-                        <div className="text-lg font-bold text-[#fefefe]">53B Done successfully· 47B Airdrop coming soon</div>
-                        <div className="text-xs text-[#868686] mt-1">TGE 1: 53B distributed • TGE 2: 47B for liquidity & CEX listings</div>
-                        <div className="mt-2 flex items-center gap-2">
-                            <div className="flex-1 bg-[#ffffff0d] rounded-lg p-2 text-center">
-                                <div className="text-xs text-[#868686]">TGE 1 Done</div>
-                                <div className="text-sm font-bold text-[#22c55e]">53B PAWS</div>
-                            </div>
-                            <div className="flex-1 bg-[#ffffff0d] rounded-lg p-2 text-center">
-                                <div className="text-xs text-[#868686]">TGE 2 Coming soon..</div>
-                                <div className="text-sm font-bold text-[#f59e0b]">47B PAWS</div>
-                            </div>
-                        </div>
-                    </div>
+                {/* Airdrop Eligibility */}
+                <div className="mt-3">
+                    <AirdropEligibility />
                 </div>
 
                 <button 
