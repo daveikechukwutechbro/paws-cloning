@@ -396,7 +396,7 @@ const LeaderboardTab = () => {
                 <div className="mt-5">
                     <div className="text-sm font-semibold text-[#fefefe] mb-3 flex items-center gap-2">
                         <span>Top Holders</span>
-                        <span className="text-[10px] text-[#868686] font-normal">Live · Updates every 3s</span>
+                        <span className="text-[10px] text-[#868686] font-normal">Live · Updates every 5s</span>
                     </div>
 
                     <div className="space-y-1">

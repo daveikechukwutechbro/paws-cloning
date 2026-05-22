@@ -485,7 +485,7 @@ const TasksTab = () => {
                                     <img
                                         src={task.icon}
                                         alt={task.title}
-                                        className="w-10 h-10 object-contain"
+                                        className="w-10 h-10 object-contain rounded-xl"
                                     />
                                 ) : (
                                     <task.icon className="w-full h-full" />
