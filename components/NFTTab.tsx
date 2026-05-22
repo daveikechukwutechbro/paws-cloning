@@ -14,6 +14,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { purchaseNFT, getLocalNFTs } from '@/utils/userUtils'
 import { PurchasedNFT, NFTTier } from '@/utils/types'
+import { validateAndProcessNFTPurchase } from '@/utils/transactionVerifier'
 
 const TOTAL_NFTS = 5700
 const ITEMS_PER_PAGE = 24
@@ -140,7 +141,6 @@ const NFTTab = () => {
     const [activeSubTab, setActiveSubTab] = useState<'mint' | 'collection'>('mint')
     const [selectedNFT, setSelectedNFT] = useState<GeneratedNFT | null>(null)
     const [txHash, setTxHash] = useState('')
-    const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
     const [copied, setCopied] = useState(false)
@@ -150,6 +150,8 @@ const NFTTab = () => {
     const [backgroundSuggestions, setBackgroundSuggestions] = useState<string[]>([])
     const [backgroundRotationIndex, setBackgroundRotationIndex] = useState(0)
     const [selectedTierFilter, setSelectedTierFilter] = useState<NFTTier | 'all'>('all')
+    const [isVerifyingTransaction, setIsVerifyingTransaction] = useState(false)
+    const [verificationStep, setVerificationStep] = useState<'input' | 'verifying' | 'confirmed'>('input')
     const sentinelRef = useRef<HTMLDivElement>(null)
 
     const ownedIds = useMemo(() => {
@@ -241,16 +243,28 @@ const NFTTab = () => {
             setError('Please enter the transaction hash')
             return
         }
-        if (txHash.length < 64) {
-            setError('Invalid transaction hash format')
-            return
-        }
 
-        setIsProcessing(true)
+        setIsVerifyingTransaction(true)
+        setVerificationStep('verifying')
         setError(null)
 
         try {
             const price = prices[selectedNFT.id] || selectedNFT.basePrice
+            
+            // Enhanced transaction verification
+            const verification = await validateAndProcessNFTPurchase(
+                txHash,
+                price,
+                selectedNFT.id
+            )
+
+            if (!verification.verified) {
+                setError(verification.details || 'Transaction verification failed')
+                setVerificationStep('input')
+                return
+            }
+
+            // Transaction verified, now record NFT purchase
             const result = await purchaseNFT(
                 user.id,
                 {
@@ -261,19 +275,24 @@ const NFTTab = () => {
                 },
                 txHash
             )
+
             if (result.success) {
+                setVerificationStep('confirmed')
                 setSuccess(true)
                 setTimeout(() => {
                     setSelectedNFT(null)
+                    setVerificationStep('input')
                     refreshUser()
-                }, 2500)
+                }, 3000)
             } else {
-                setError(result.error || 'Verification failed')
+                setError(result.error || 'Failed to process NFT purchase')
+                setVerificationStep('input')
             }
         } catch {
             setError('Failed to process')
+            setVerificationStep('input')
         } finally {
-            setIsProcessing(false)
+            setIsVerifyingTransaction(false)
         }
     }
 
@@ -392,7 +411,7 @@ const NFTTab = () => {
                                                     src={nft.icon}
                                                     alt={nft.name}
                                                     fill
-                                                    className="object-contain object-center"
+                                                    className="object-cover object-center"
                                                     sizes="120px"
                                                 />
                                             </div>
@@ -467,7 +486,7 @@ const NFTTab = () => {
                                                             src={imageSrc}
                                                             alt={nft.name}
                                                             fill
-                                                            className="object-contain object-center"
+                                                            className="object-cover object-center"
                                                             sizes="64px"
                                                         />
                                                     </div>
@@ -523,17 +542,19 @@ const NFTTab = () => {
 
                                 <div className="p-5 space-y-5">
                                     <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f10]">
-                                        <div className="relative w-full h-80">
+                                        <div className="relative w-full h-96 bg-black">
                                             <Image
                                                 src={selectedNFT.fullImage || selectedNFT.icon}
                                                 alt={selectedNFT.name}
                                                 fill
-                                                className="object-contain bg-black"
+                                                className="object-cover object-center"
                                                 sizes="600px"
+                                                priority
                                             />
                                         </div>
-                                        <div className="absolute inset-x-0 bottom-0 bg-black/50 p-3 text-xs text-gray-300">
-                                            Full PNG preview — high-quality, immersive view for collectors.
+                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/50 to-transparent p-4 text-xs text-gray-300">
+                                            <div className="font-semibold text-white mb-1">Full PNG Preview</div>
+                                            <div>High-quality immersive view for collectors</div>
                                         </div>
                                     </div>
                                     <div className={`relative overflow-hidden rounded-3xl border ${TIER_BORDER[selectedNFT.tier]} bg-gradient-to-br ${TIER_BG[selectedNFT.tier]} p-4`}>
@@ -543,14 +564,14 @@ const NFTTab = () => {
                                             <div className="flex items-center gap-4">
                                                 <div className="w-20 h-20 rounded-3xl overflow-hidden bg-black/30 shrink-0 flex items-center justify-center border border-white/10">
                                                     <div className="relative w-full h-full">
-                                                    <Image
-                                                        src={selectedNFT.fullImage || selectedNFT.icon}
-                                                        alt={selectedNFT.name}
-                                                        fill
-                                                        className="object-contain object-center"
-                                                        sizes="80px"
-                                                    />
-                                                </div>
+                                                <Image
+                                                    src={selectedNFT.fullImage || selectedNFT.icon}
+                                                    alt={selectedNFT.name}
+                                                    fill
+                                                    className="object-cover object-center"
+                                                    sizes="80px"
+                                                />
+                                            </div>
                                                 </div>
                                                 <div>
                                                     <div className="font-bold text-white text-base">{selectedNFT.name}</div>
@@ -646,15 +667,33 @@ const NFTTab = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-400">Transaction Hash</label>
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-medium text-gray-400">Transaction Hash</label>
+                                            <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${
+                                                verificationStep === 'input' ? 'bg-blue-500/20 text-blue-400' :
+                                                verificationStep === 'verifying' ? 'bg-yellow-500/20 text-yellow-400 animate-pulse' :
+                                                'bg-green-500/20 text-green-400'
+                                            }`}>
+                                                {verificationStep === 'input' ? '📋 Ready' :
+                                                 verificationStep === 'verifying' ? '⏳ Verifying...' :
+                                                 '✓ Verified'}
+                                            </span>
+                                        </div>
                                         <input
                                             type="text"
                                             value={txHash}
-                                            onChange={(e) => setTxHash(e.target.value.trim())}
-                                            placeholder="Paste TX hash here..."
-                                            className="w-full bg-[#1f1f20] text-white rounded-xl px-4 py-3 text-sm border border-[#2d2d2e] focus:border-[#a855f7] outline-none transition-colors"
+                                            onChange={(e) => {
+                                                setTxHash(e.target.value.trim())
+                                                if (verificationStep !== 'input') setVerificationStep('input')
+                                            }}
+                                            placeholder="Paste 64+ character TX hash from TON wallet..."
+                                            className="w-full bg-[#1f1f20] text-white rounded-xl px-4 py-3 text-sm border border-[#2d2d2e] focus:border-[#a855f7] outline-none transition-colors disabled:opacity-50"
+                                            disabled={isVerifyingTransaction}
                                         />
-                                        <div className="text-xs text-gray-500">Find in your TON wallet after sending</div>
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                            <span>🔗</span>
+                                            <span>64+ characters • Found in your TON wallet transaction details</span>
+                                        </div>
                                     </div>
 
                                     {error && (
@@ -666,16 +705,29 @@ const NFTTab = () => {
                                     <div className="flex gap-3">
                                         <button
                                             onClick={handleBackToMint}
-                                            className="flex-1 py-3 rounded-xl bg-[#2d2d2e] text-white font-medium"
+                                            className="flex-1 py-3 rounded-xl bg-[#2d2d2e] text-white font-medium hover:bg-[#3d3d3e] transition disabled:opacity-50"
+                                            disabled={isVerifyingTransaction}
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             onClick={handlePurchase}
-                                            disabled={isProcessing || !txHash}
-                                            className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#a855f7] to-[#7c3aed] text-white font-bold disabled:opacity-50"
+                                            disabled={isVerifyingTransaction || !txHash || verificationStep === 'confirmed'}
+                                            className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#a855f7] to-[#7c3aed] text-white font-bold disabled:opacity-50 transition relative overflow-hidden"
                                         >
-                                            {isProcessing ? 'Verifying...' : 'Verify & Mint'}
+                                            {isVerifyingTransaction ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <span className="inline-block w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                                    Verifying...
+                                                </span>
+                                            ) : verificationStep === 'confirmed' ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <span>✓</span>
+                                                    NFT Minting...
+                                                </span>
+                                            ) : (
+                                                'Verify & Mint'
+                                            )}
                                         </button>
                                     </div>
                                 </div>

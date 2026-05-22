@@ -1,0 +1,15 @@
+{
+  "name": "PAWS NFT #3449",
+  "description": "PAWS NFT generated from backgrounds (photo_2026-05-21_10-42-12) and characters (photo_2026-05-17_14-55-29)",
+  "image": "images/3449.png",
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "photo_2026-05-21_10-42-12"
+    },
+    {
+      "trait_type": "Character",
+      "value": "photo_2026-05-17_14-55-29"
+    }
+  ]
+}
