@@ -39,7 +39,8 @@ function nftThumbUrl(index: number): string {
 }
 
 function nftFullUrl(index: number): string {
-    return `/nfts/images/${index}.png`
+    // Full-size PNGs are not present in this repo — use the available webp thumbs instead
+    return `/nfts/thumbs/${index}.webp`
 }
 
 function generateNFT(index: number) {
