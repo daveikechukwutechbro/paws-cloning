@@ -14,6 +14,7 @@ import HomeTab from './HomeTab'
 import LeaderboardTab from './LeaderboardTab'
 import FriendsTab from './FriendsTab'
 import TasksTab from './TasksTab'
+import NFTTab from './NFTTab'
 
 const TabContainer = () => {
     const { activeTab } = useTab()
@@ -31,6 +32,9 @@ const TabContainer = () => {
             </div>
             <div className={`${activeTab === 'earn' ? 'is-show' : 'is-hide'}`}>
                 <TasksTab />
+            </div>
+            <div className={`${activeTab === 'nft' ? 'is-show' : 'is-hide'}`}>
+                <NFTTab />
             </div>
         </div>
     )

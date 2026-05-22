@@ -35,3 +35,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated NFT images (2.9GB)
+/public/nfts/
+
+# hashlips art engine (cloned dependency)
+/hashlips_art_engine/

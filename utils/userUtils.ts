@@ -2,6 +2,7 @@ import { doc, getDoc, increment, setDoc, Timestamp, runTransaction } from 'fireb
 import { db } from '@/utils/firebaseClient'
 import { processNewReferral, REFERRAL_TIERS } from '@/utils/referralSystem'
 import { ActiveMiningUpgrade, MINING_UPGRADES, calculateNextExpiry } from './miningUpgrades'
+import { PurchasedNFT } from './types'
 
 export interface ReferralFriend {
     id: string
@@ -31,6 +32,7 @@ export interface User {
     completedTasks?: string[]
     miningUpgrades?: ActiveMiningUpgrade[]
     miningUpgradedAt?: string
+    nfts?: PurchasedNFT[]
 }
 
 export async function getOrCreateUser(
@@ -352,5 +354,66 @@ export async function processPreSalePurchase(
     } catch (error: any) {
         console.error('Transaction failed processing pre-sale purchase:', error)
         return { success: false, error: error.message || 'Failed to process purchase' }
+    }
+}
+
+export async function purchaseNFT(
+    userId: string,
+    nft: { id: string; name: string; tier: 'Common' | 'Rare' | 'Epic' | 'Legendary'; pricePaid: number },
+    transactionHash: string
+): Promise<{ success: boolean; error?: string }> {
+    const userRef = doc(db, 'users', userId)
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const userSnap = await transaction.get(userRef)
+
+            if (!userSnap.exists()) {
+                throw new Error('User not found')
+            }
+
+            const userData = userSnap.data() as User
+            const currentNFTs = userData.nfts || []
+
+            const newNFT: PurchasedNFT = {
+                nftId: nft.id,
+                name: nft.name,
+                tier: nft.tier,
+                pricePaid: nft.pricePaid,
+                purchasedAt: new Date().toISOString(),
+                transactionHash
+            }
+
+            transaction.update(userRef, {
+                nfts: [...currentNFTs, newNFT]
+            })
+        })
+
+        // Sync to localStorage
+        const stored = localStorage.getItem('paws_nfts')
+        const localNFTs: PurchasedNFT[] = stored ? JSON.parse(stored) : []
+        localNFTs.push({
+            nftId: nft.id,
+            name: nft.name,
+            tier: nft.tier,
+            pricePaid: nft.pricePaid,
+            purchasedAt: new Date().toISOString(),
+            transactionHash
+        })
+        localStorage.setItem('paws_nfts', JSON.stringify(localNFTs))
+
+        return { success: true }
+    } catch (error: any) {
+        console.error('Transaction failed purchasing NFT:', error)
+        return { success: false, error: error.message || 'Failed to process NFT purchase' }
+    }
+}
+
+export function getLocalNFTs(): PurchasedNFT[] {
+    try {
+        const stored = localStorage.getItem('paws_nfts')
+        return stored ? JSON.parse(stored) : []
+    } catch {
+        return []
     }
 }

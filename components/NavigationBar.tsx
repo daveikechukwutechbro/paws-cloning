@@ -14,6 +14,7 @@ import Earn from '@/icons/Earn'
 import Friends from '@/icons/Friends'
 import Home from '@/icons/Home'
 import Leaderboard from '@/icons/Leaderboard'
+import NFT from '@/icons/NFT'
 import { TabType } from '@/utils/types'
 
 const NavigationBar = () => {
@@ -24,6 +25,7 @@ const NavigationBar = () => {
         { id: 'leaderboard', label: 'Leaderboard', Icon: Leaderboard },
         { id: 'friends', label: 'Friends', Icon: Friends },
         { id: 'earn', label: 'Earn', Icon: Earn },
+        { id: 'nft', label: 'NFT', Icon: NFT },
     ]
 
     return (
