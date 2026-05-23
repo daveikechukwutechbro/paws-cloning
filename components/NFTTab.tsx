@@ -401,7 +401,7 @@ const NFTTab = () => {
                         </div>
 
                         {/* NFT Grid */}
-                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
                             {filteredNFTs.map((nft, idx) => {
                                 const owned = ownedIds.has(nft.id)
                                 const currentPrice = prices[nft.id] || nft.basePrice
@@ -413,39 +413,48 @@ const NFTTab = () => {
                                     <div
                                         key={nft.id}
                                         onClick={() => !owned && handleMint(nft)}
-                                        className={`relative border ${TIER_BORDER[tier]} rounded-xl overflow-hidden ${TIER_GLOW[tier]} shadow-lg ${owned ? 'opacity-60' : 'hover:scale-[1.02] active:scale-95 transition-all cursor-pointer'}`}
-                                        style={{ backgroundImage: `linear-gradient(180deg, ${gFrom}, ${gTo})` }}
+                                        className={`relative border border-white/10 rounded-[28px] overflow-hidden ${TIER_GLOW[tier]} shadow-[0_25px_80px_rgba(0,0,0,0.45)] ${owned ? 'opacity-75' : 'hover:-translate-y-1 hover:shadow-[0_32px_120px_rgba(0,0,0,0.5)] transition-transform duration-300 cursor-pointer'}`}
+                                        style={{
+                                            backgroundImage: `linear-gradient(180deg, ${gFrom}, ${gTo})`,
+                                            backgroundSize: 'cover',
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundPosition: 'center',
+                                            minHeight: '34rem'
+                                        }}
                                     >
-                                        <div className="relative">
-                                            <div className={`absolute -inset-1 bg-gradient-to-r ${tier === 'Common' ? 'from-gray-400 to-gray-600' : tier === 'Rare' ? 'from-blue-400 to-cyan-400' : tier === 'Epic' ? 'from-purple-400 to-pink-400' : 'from-yellow-400 to-orange-400'} opacity-10 blur-xl`} />
-                                            <div className="relative w-full h-48 overflow-hidden flex items-center justify-center bg-black/10">
+                                        <div className="relative z-10 flex h-full flex-col">
+                                            <div className="relative w-full h-80 overflow-hidden flex items-center justify-center border-b border-white/10 bg-transparent">
                                                 <Image
-                                                    src={nft.icon}
+                                                    src={nft.fullImage}
                                                     alt={nft.name}
                                                     fill
                                                     className="object-contain object-center"
-                                                    sizes="240px"
+                                                    sizes="480px"
                                                     quality={90}
                                                 />
                                             </div>
-                                            <div className="p-2">
-                                                <h3 className="text-sm font-bold text-white truncate leading-tight">{nft.name}</h3>
-                                                <span className={`inline-block text-[8px] font-semibold px-1.5 py-0.5 rounded-full border mt-0.5 ${TIER_COLORS[tier]}`}>
-                                                    {tier}
-                                                </span>
-                                                <div className="mt-1 flex items-center gap-0.5">
-                                                    <span className="text-xs font-bold text-white">{currentPrice.toFixed(2)}</span>
-                                                    <span className="text-[7px] text-gray-400">TON</span>
-                                                    <span className={`text-[8px] ml-auto ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {isUp ? '↑' : '↓'}{Math.abs(priceChange).toFixed(0)}%
+                                            <div className="p-4 flex-1 flex flex-col justify-between">
+                                                <div>
+                                                    <h3 className="text-base font-bold text-white truncate leading-tight">{nft.name}</h3>
+                                                    <span className={`inline-flex items-center text-[10px] font-semibold px-2 py-1 rounded-full border mt-3 ${TIER_COLORS[tier]}`}>
+                                                        {tier}
                                                     </span>
                                                 </div>
-                                            </div>
-                                            {owned && (
-                                                <div className="absolute top-1.5 right-1.5 bg-[#22c55e] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
-                                                    ✓
+                                                <div className="mt-3 flex items-center gap-2 text-white">
+                                                    <span className="text-2xl font-black tracking-tight">{currentPrice.toFixed(2)}</span>
+                                                    <span className="text-xs text-gray-200">TON</span>
                                                 </div>
-                                            )}
+                                                <div className="mt-4 flex items-center justify-between text-[10px] uppercase tracking-[0.15em] text-gray-300">
+                                                    <span className={isUp ? 'text-emerald-300' : 'text-rose-300'}>
+                                                        {isUp ? '↑' : '↓'}{Math.abs(priceChange).toFixed(0)}%
+                                                    </span>
+                                                    {owned ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 text-[10px] text-emerald-200">Owned</span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 text-[10px] text-slate-100">Tap to mint</span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )
