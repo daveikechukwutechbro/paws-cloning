@@ -504,7 +504,6 @@ const HomeTab = () => {
                                                 <div className="text-xl">{tier.icon}</div>
                                                 <div>
                                                     <div className="text-sm font-semibold" style={{ color: isUnlocked ? tier.color : '#555' }}>{tier.label}</div>
-                                                    <div className="text-xs text-[#868686]">{tier.usersEstimate}</div>
                                                 </div>
                                             </div>
                                             <div className="text-right">
