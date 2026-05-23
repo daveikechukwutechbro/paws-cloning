@@ -508,9 +508,6 @@ const HomeTab = () => {
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xs text-[#868686]">
-                                                    {tier.minBalance === 0 ? '0' : tier.minBalance.toLocaleString()} PAWS+
-                                                </div>
                                                 {isCurrentTier && (
                                                     <div className="text-[10px] font-semibold mt-0.5" style={{ color: tier.color }}>CURRENT</div>
                                                 )}
