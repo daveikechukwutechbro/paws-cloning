@@ -26,16 +26,18 @@ function randomItem<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)]
 }
 
-function randomTonPrice(): string {
-    const prices = [15.67, 17.80, 19.87, 26.20, 33.22, 42.49, 49.53]
-    const price = randomItem(prices)
-    return price.toFixed(2)
-}
+const MINING_ITEMS = [
+    { name: 'Bronze Miner', bonus: '+25,000/hr', price: '2.03 TON' },
+    { name: 'Silver Miner', bonus: '+50,000/hr', price: '4.03 TON' },
+    { name: 'Gold Miner', bonus: '+100,000/hr', price: '8.03 TON' },
+]
 
-function randomPawsAmount(): string {
-    const amounts = ['25,000', '50,000', '75,000', '100,000', '150,000', '200,000']
-    return randomItem(amounts)
-}
+const PRESALE_ITEMS = [
+    { name: '250M PAWS', price: '542 TON' },
+    { name: '500M PAWS', price: '1,084 TON' },
+    { name: '750M PAWS', price: '1,626 TON' },
+    { name: '1B PAWS', price: '2,168 TON' },
+]
 
 function generateNotification(id: number): Notification {
     const type = randomItem<NotificationType>(['mining', 'presale'])
@@ -44,12 +46,16 @@ function generateNotification(id: number): Notification {
 
     let message: string
     switch (type) {
-        case 'mining':
-            message = `boosted mining speed with ${randomItem(['Bronze', 'Silver', 'Gold'])} Miner for ${randomTonPrice()} TON`
+        case 'mining': {
+            const item = randomItem(MINING_ITEMS)
+            message = `boosted mining speed with ${item.name} (${item.bonus}) for ${item.price}`
             break
-        case 'presale':
-            message = `just bought ${randomPawsAmount()} PAWS tokens in pre-sale`
+        }
+        case 'presale': {
+            const item = randomItem(PRESALE_ITEMS)
+            message = `just bought ${item.name} tokens in pre-sale for ${item.price}`
             break
+        }
     }
 
     return { id, type, userName, message, timestamp: Date.now() }

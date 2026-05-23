@@ -23,6 +23,7 @@ import { db } from '@/utils/firebaseClient'
 import { getUserTier, getNextTier, getProgressToNextTier, getEstimatedRank, RANK_TIERS } from '@/utils/rankingSystem'
 import TokenomicsModal from '@/components/TokenomicsModal'
 import AirdropEligibility from '@/components/AirdropEligibility'
+import MiningUpgradeShop from '@/components/MiningUpgradeShop'
 import { getCurrentUserCount, formatUserCount } from '@/utils/userGrowth'
 import { REWARDS } from '@/utils/types'
 import { PRESALE_PACKAGES, PRESALE_RECEIVING_WALLET, formatPresaleAmount } from '@/utils/preSale'
@@ -55,6 +56,7 @@ const HomeTab = () => {
     const [isClaiming, setIsClaiming] = useState(false)
     const [showRankModal, setShowRankModal] = useState(false)
     const [showTokenomics, setShowTokenomics] = useState(false)
+    const [showMiningShop, setShowMiningShop] = useState(false)
     const [airdropCount, setAirdropCount] = useState(0)
     const AIRDROP_TARGET = 2_000_000
     const [selectedPresale, setSelectedPresale] = useState<string | null>(null)
@@ -366,6 +368,21 @@ const HomeTab = () => {
                         </button>
                     )}
                 </div>
+
+                {/* Mining Speed Upgrade Button */}
+                <button
+                    onClick={() => setShowMiningShop(true)}
+                    className="w-full mt-3 bg-gradient-to-r from-[#f59e0b] to-[#ef4444] text-white rounded-lg px-4 py-3 flex items-center justify-between"
+                >
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">⚡</span>
+                        <div className="text-left">
+                            <div className="font-semibold">Boost Mining Speed</div>
+                            <div className="text-xs text-white/80">Up to +100,000 PAWS/hr</div>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-6 h-6" />
+                </button>
             </div>
 
             <div className="px-4 mt-8 mb-8">
@@ -583,6 +600,7 @@ const HomeTab = () => {
                 )}
 
             {showTokenomics && <TokenomicsModal onClose={() => setShowTokenomics(false)} />}
+            {showMiningShop && <MiningUpgradeShop onClose={() => setShowMiningShop(false)} onPurchaseComplete={() => { refreshUser(); setShowMiningShop(false) }} />}
         </div>
 
             {/* Rank Modal */}
