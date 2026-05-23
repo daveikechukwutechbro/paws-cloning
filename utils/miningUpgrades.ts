@@ -38,7 +38,7 @@ export interface ActiveMiningUpgrade {
     transactionHash?: string
 }
 
-export const DEFAULT_MINING_RATE = 2000 // Base tokens per hour
+export const DEFAULT_MINING_RATE = 5000 // Base tokens per hour
 
 export function getMiningBonusRate(activeUpgrades: ActiveMiningUpgrade[]): number {
     let totalBonus = 0

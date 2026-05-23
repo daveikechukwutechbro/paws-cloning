@@ -140,7 +140,7 @@ const HomeTab = () => {
         const savedLastClaim = localStorage.getItem(timerKey)
         if (savedLastClaim) {
             const lastClaimTime = parseInt(savedLastClaim)
-            const remaining = 180000 - (Date.now() - lastClaimTime)
+            const remaining = 3600000 - (Date.now() - lastClaimTime)
             if (remaining > 0) {
                 setTimeRemaining(remaining)
             }
@@ -164,7 +164,7 @@ const HomeTab = () => {
             const saved = localStorage.getItem(timerKey)
             if (saved) {
                 const lastClaimTime = parseInt(saved)
-                const remaining = 180000 - (Date.now() - lastClaimTime)
+                const remaining = 3600000 - (Date.now() - lastClaimTime)
                 setTimeRemaining(Math.max(0, remaining))
             }
         }, 1000)
@@ -176,7 +176,10 @@ const HomeTab = () => {
         
         setIsClaiming(true)
         try {
-            const newBalance = displayBalance + 2000
+            const reward = user?.miningUpgrades ? 
+                (DEFAULT_MINING_RATE + getMiningBonusRate(user.miningUpgrades)) : 
+                DEFAULT_MINING_RATE
+            const newBalance = displayBalance + reward
             setDisplayBalance(newBalance)
             localStorage.setItem(balanceKey, newBalance.toString())
             
@@ -327,7 +330,7 @@ const HomeTab = () => {
                 </div>
             )}
 
-            <div className="flex flex-col items-center mt-8">
+            <div className="flex flex-col items-center mt-4">
                 <PawsLogo className="w-28 h-28 mb-4" />
                 <div className="flex items-center gap-1 text-center">
                     <div className="text-6xl font-bold mb-1">{displayBalance.toLocaleString()}</div>
@@ -352,11 +355,11 @@ const HomeTab = () => {
                 <div className="bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg p-4">
                     <div className="text-center mb-3">
                         <div className="text-lg font-medium">
-                            Hourly Reward: {user && user.miningUpgrades ? 
+                            Mining Reward: {user && user.miningUpgrades ? 
                                 (DEFAULT_MINING_RATE + getMiningBonusRate(user.miningUpgrades)).toLocaleString() : 
                                 DEFAULT_MINING_RATE.toLocaleString()} PAWS
                         </div>
-                        <div className="text-sm text-[#868686]">Claim every hour</div>
+                        <div className="text-sm text-[#868686]">Claim every 1 hour</div>
                     </div>
                     {timeRemaining > 0 ? (
                         <div className="text-center">

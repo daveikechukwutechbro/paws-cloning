@@ -30,9 +30,9 @@ const CheckFootprint = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="px-4 pb-2 flex items-center justify-between text-[10px] text-gray-500">
+                    <div className="px-4 pb-1 flex items-center justify-between text-[9px] text-gray-500">
                         <span className="flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" />
+                            <span className="w-1 h-1 rounded-full bg-[#22c55e] animate-pulse" />
                             {formatUserCount(userCount)} total users
                         </span>
                         <span>Airdrop eligibility active</span>

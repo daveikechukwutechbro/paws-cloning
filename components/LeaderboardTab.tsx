@@ -12,7 +12,7 @@ type LeaderboardItem = {
     username: string
     balance: number
     place: number
-    medal?: { emoji: string; bg: string }
+    medal?: { emoji: string; bg: string } | null
     tierLabel: string
 }
 
@@ -98,36 +98,38 @@ const trustedNames = [
 ]
 
 const influencerNames = [
-    'CryptoKing', 'Maximalist', 'TokenCollector', 'Miner_Mogul', 'Godfather',
-    'TG_Influencer', 'CryptoTitan', 'TokenBaron', 'Miner_Prince', 'Duke',
-    'TG_Earl', 'CryptoMarquis', 'TokenShah', 'Miner_King', 'Emperor',
-    'TG_Caesar', 'CryptoSultan', 'TokenPharaoh', 'Miner_Tsar', 'Sovereign',
-    'TG_Magnate', 'CryptoBaron', 'TokenDuke', 'Miner_Earl', 'Lord',
-    'TG_Baron', 'CryptoCount', 'TokenViscount', 'Miner_Baron', 'Viscount',
-    'TG_Knight', 'CryptoEsquire', 'TokenLord', 'Miner_Sir', 'Noble',
-    'TG_Prime', 'CryptoRoyal', 'TokenCrown', 'Miner_Regal', 'Majesty',
-    'TG_Supreme', 'CryptoElite', 'TokenPrime', 'Miner_Alpha', 'Omega',
-    'TG_Apex', 'CryptoZenith', 'TokenPeak', 'Miner_Summit', 'Pinnacle',
+    'Alessandro', 'Yuki', 'Kwame', 'Hiroshi', 'Mateo',
+    'Anastasia', 'Ravi', 'Zara', 'Dmitri', 'Fatima',
+    'Sebastián', 'Priya', 'Björn', 'Aisha', 'Kenji',
+    'Valentina', 'Rashid', 'Mei', 'Santiago', 'Olga',
+    'Thabo', 'Hana', 'Elena', 'Omar', 'Yuna',
+    'Marco', 'Nia', 'Chen', 'Isabella', 'Lars',
+    'Amara', 'Viktor', 'Layla', 'Takeshi', 'Aria',
+    'Chidi', 'Ingrid', 'Wei', 'Carmen', 'Rohan',
+    'Svetlana', 'Diego', 'Amina', 'Felix', 'Zahra',
+    'Kofi', 'Minji', 'Giovanni', 'Thandi', 'Arjun',
 ]
 
 const whaleNames = [
-    'CryptoWhale_2024', 'OG_Hunter', 'DiamondHands_ETH', 'TON_Believer', 'MegaMiner_99',
-    'Legend', 'EarlyBird_TG', 'WhaleWatcher', 'CryptoNomad', 'DailyMiner_Pro',
-    'Whale_X', 'TG_CryptoGod', 'TokenShark', 'Miner_Orca', 'Leviathan',
-    'CryptoKraken', 'TG_BlueWhale', 'TokenHumpback', 'Miner_Sperm', 'Right',
-    'CryptoMammoth', 'TG_Giant', 'TokenTitan', 'Miner_Colossus', 'Goliath',
-    'CryptoJuggernaut', 'TG_Behemoth', 'TokenMonster', 'Miner_Alpha', 'Omega',
-    'CryptoSupreme', 'TG_Ultra', 'TokenMega', 'Miner_Giga', 'Tera',
-    'CryptoInfinite', 'TG_Eternal', 'TokenBoundless', 'Miner_Endless', 'Vast',
+    'Ahmed', 'Sophia', 'Ibrahim', 'Maria', 'Sakura',
+    'David', 'Hassan', 'Emma', 'Tariq', 'Liam',
+    'Yusuf', 'Ava', 'Khalid', 'Olivia', 'Rina',
+    'Noah', 'Zainab', 'Mia', 'Gabriel', 'Isla',
+    'Rafael', 'Sana', 'Aditya', 'Luna', 'Hiro',
+    'Noor', 'Daniel', 'Amira', 'Ethan', 'Nadia',
+    'Lucas', 'Jamila', 'Mason', 'Mira', 'Aiden',
+    'Sabrina', 'Lena', 'Hugo', 'Sara', 'Max',
+    'Livia', 'Nina', 'Otto', 'Theo', 'Romy',
+    'Elio', 'Sofie', 'Milan', 'Lea', 'Jonas',
 ]
 
 const eliteNames = [
-    'CryptoWhale_2024', 'PAWS_OG_Hunter', 'DiamondHands_ETH', 'TON_Believer', 'MegaMiner_99',
-    'PAWS_Legend', 'EarlyBird_TG', 'WhaleWatcher', 'CryptoNomad', 'DailyMiner_Pro',
+    'Alexander', 'Victoria', 'Benjamin', 'Charlotte', 'William',
+    'Sofia', 'James', 'Amelia', 'Oliver', 'Mia',
 ]
 
 const legendNames = [
-    'CryptoWhale_2024', 'PAWS_OG_Hunter', 'DiamondHands_ETH', 'TON_Believer', 'MegaMiner_99',
+    'Sebastian', 'Anya', 'Nathaniel', 'Aurora', 'Maximilian',
 ]
 
 // Static top 55 base balances - Legend: 3, Elite: 4, then others
@@ -205,12 +207,9 @@ function getUsernameForTier(tierLabel: string, indexInTier: number, timeWindows:
     const pool = namePools[tierLabel]
     if (!pool) return 'Unknown'
 
-    // Elite & Legend: constant name pools, only shuffle positions periodically
-    // Offset Legend by half its interval so they don't shuffle simultaneously
+    // Elite & Legend: use deterministic real names from pools
     if (tierLabel === 'Elite' || tierLabel === 'Legend') {
-        const interval = tierLabel === 'Elite' ? 86400 : 259200 // 1 day / 3 days (in seconds)
-        const offset = tierLabel === 'Legend' ? 129600 : 0 // Half of Legend's interval
-        const windowKey = Math.floor((Date.now() / 1000 + offset) / interval)
+        const windowKey = Math.floor(Date.now() / 1000 / 86400)
         const shuffledPool = seededShuffle(pool, windowKey)
         return shuffledPool[indexInTier % shuffledPool.length]
     }
@@ -218,11 +217,11 @@ function getUsernameForTier(tierLabel: string, indexInTier: number, timeWindows:
     // Lower tiers: rotate names continuously using real time
     // The window changes at different rates per tier, creating organic feel
     const tierIntervals: Record<string, number> = {
-        'Newcomer': 3,     // Every 3 seconds
-        'Active': 6,       // Every 6 seconds
-        'Trusted': 12,     // Every 12 seconds
-        'Influencer': 18,  // Every 18 seconds
-        'Whale': 24,       // Every 24 seconds
+        'Newcomer': 6,     // Every 6 seconds
+        'Active': 12,      // Every 12 seconds
+        'Trusted': 30,     // Every 30 seconds
+        'Influencer': 60,  // Every 60 seconds
+        'Whale': 300,      // Every 5 minutes
     }
 
     const interval = tierIntervals[tierLabel] || 3
@@ -244,21 +243,21 @@ const LeaderboardTab = () => {
         return () => clearInterval(interval)
     }, [])
 
-    // Update time windows every 3 seconds to trigger re-renders
+    // Update time windows to trigger re-renders
     useEffect(() => {
         const updateWindows = () => {
             setTimeWindows({
-                Newcomer: getTimeWindow(3),
-                Active: getTimeWindow(6),
-                Trusted: getTimeWindow(12),
-                Influencer: getTimeWindow(18),
-                Whale: getTimeWindow(24),
+                Newcomer: getTimeWindow(6),
+                Active: getTimeWindow(12),
+                Trusted: getTimeWindow(30),
+                Influencer: getTimeWindow(60),
+                Whale: getTimeWindow(300),
                 Elite: getTimeWindow(86400),
-                Legend: getTimeWindow(259200),
+                Legend: getTimeWindow(86400),
             })
         }
         updateWindows()
-        const interval = setInterval(updateWindows, 3000)
+        const interval = setInterval(updateWindows, 6000)
         return () => clearInterval(interval)
     }, [])
 
@@ -364,46 +363,48 @@ const LeaderboardTab = () => {
                     <div className="w-full mt-1 text-[11px] text-[#868686] text-right">{totalUserProgress}% of target</div>
                 </div>
 
-                {/* User Card */}
-                <div className="rounded-2xl p-4 mt-4 border-2" style={{
-                    backgroundColor: currentTier ? currentTier.bgColor : '#151516',
-                    borderColor: currentTier ? currentTier.color : '#2d2d2e'
-                }}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 p-1.5 rounded-lg" style={{ backgroundColor: '#0f172a' }}>
-                                <PawsLogo className="w-full h-full" />
-                            </div>
-                            <div>
-                                <div className="text-base font-semibold text-[#fefefe]">{loading ? 'Loading...' : (user?.username || 'You')}</div>
-                                <div className="text-xs" style={{ color: currentTier?.color || '#868686' }}>
-                                    {loading ? '--' : (user?.balance || 50000).toLocaleString()} PAWS · {currentTier?.label || 'Newcomer'}
+                {/* User Card - Only visible for Whale, Elite, and Legend */}
+                {currentTier && (currentTier.label === 'Whale' || currentTier.label === 'Elite' || currentTier.label === 'Legend') && (
+                    <div className="rounded-2xl p-4 mt-4 border-2" style={{
+                        backgroundColor: currentTier ? currentTier.bgColor : '#151516',
+                        borderColor: currentTier ? currentTier.color : '#2d2d2e'
+                    }}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 p-1.5 rounded-lg" style={{ backgroundColor: '#0f172a' }}>
+                                    <PawsLogo className="w-full h-full" />
+                                </div>
+                                <div>
+                                    <div className="text-base font-semibold text-[#fefefe]">{loading ? 'Loading...' : (user?.username || 'You')}</div>
+                                    <div className="text-xs" style={{ color: currentTier?.color || '#868686' }}>
+                                        {loading ? '--' : (user?.balance || 50000).toLocaleString()} PAWS · {currentTier?.label || 'Newcomer'}
+                                    </div>
                                 </div>
                             </div>
+                            <div className="text-right">
+                                <div className="text-lg font-bold text-[#fefefe]">{userRank}</div>
+                                <div className="text-[10px] text-[#868686]">Target {totalUserTarget.toLocaleString()} • {totalUserProgress}% reached</div>
+                            </div>
                         </div>
-                        <div className="text-right">
-                            <div className="text-lg font-bold text-[#fefefe]">{userRank}</div>
-                            <div className="text-[10px] text-[#868686]">Target {totalUserTarget.toLocaleString()} • {totalUserProgress}% reached</div>
-                        </div>
-                    </div>
 
-                    {currentTier && currentTier.maxBalance !== Infinity && (
-                        <div className="mt-3 pt-3 border-t border-white/10">
-                            <div className="flex justify-between text-xs text-[#868686] mb-1">
-                                <span>Next: {RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.label || 'Legend'}</span>
-                                <span style={{ color: RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.color || '#ffd700' }}>
-                                    {Math.floor(getProgressToNextTier(user?.balance || 0))}%
-                                </span>
+                        {currentTier && currentTier.maxBalance !== Infinity && (
+                            <div className="mt-3 pt-3 border-t border-white/10">
+                                <div className="flex justify-between text-xs text-[#868686] mb-1">
+                                    <span>Next: {RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.label || 'Legend'}</span>
+                                    <span style={{ color: RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.color || '#ffd700' }}>
+                                        {Math.floor(getProgressToNextTier(user?.balance || 0))}%
+                                    </span>
+                                </div>
+                                <div className="w-full bg-[#1f1f20] rounded-full h-1.5">
+                                    <div className="h-1.5 rounded-full transition-all duration-500" style={{
+                                        width: `${getProgressToNextTier(user?.balance || 0)}%`,
+                                        backgroundColor: RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.color || '#ffd700'
+                                    }} />
+                                </div>
                             </div>
-                            <div className="w-full bg-[#1f1f20] rounded-full h-1.5">
-                                <div className="h-1.5 rounded-full transition-all duration-500" style={{
-                                    width: `${getProgressToNextTier(user?.balance || 0)}%`,
-                                    backgroundColor: RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.color || '#ffd700'
-                                }} />
-                            </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Top Leaderboard */}
                 <div className="mt-5">

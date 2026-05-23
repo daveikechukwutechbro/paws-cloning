@@ -10,6 +10,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { getRandomInternationalName } from '@/utils/internationalNames'
 
 type NotificationType = 'nft' | 'mining' | 'presale'
 
@@ -20,21 +21,6 @@ interface Notification {
     message: string
     timestamp: number
 }
-
-const FIRST_NAMES = [
-    'Alex', 'Sarah', 'Mike', 'Emma', 'John', 'Lisa', 'David', 'Anna',
-    'Chris', 'Maria', 'James', 'Sophie', 'Dan', 'Olivia', 'Tom', 'Ella',
-    'Max', 'Zoe', 'Ryan', 'Lily', 'Ben', 'Chloe', 'Sam', 'Mia',
-    'Jack', 'Lucy', 'Will', 'Grace', 'Luke', 'Ruby', 'Oli', 'Ivy',
-    'Noah', 'Eva', 'Leo', 'Amy', 'Kai', 'Rose', 'Jake', 'Nina',
-    'Anita', 'Ravi', 'Wei', 'Kiran', 'Yuki', 'Olga', 'Hugo', 'Lena'
-]
-
-const NFT_NAMES = [
-    'Cosmic Paw', 'Neon Claw', 'Crystal Fang', 'Shadow Mane',
-    'Thunder Pelt', 'Inferno Eye', 'Eternal Roar', 'Astral Wolf',
-    'Blazing Fox', 'Celestial Bear', 'Dark Panther', 'Ethereal Dragon'
-]
 
 function randomItem<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)]
@@ -51,9 +37,16 @@ function randomPawsAmount(): string {
     return randomItem(amounts)
 }
 
+const NFT_NAMES = [
+    'Cosmic Paw', 'Neon Claw', 'Crystal Fang', 'Shadow Mane',
+    'Thunder Pelt', 'Inferno Eye', 'Eternal Roar', 'Astral Wolf',
+    'Blazing Fox', 'Celestial Bear', 'Dark Panther', 'Ethereal Dragon'
+]
+
 function generateNotification(id: number): Notification {
     const type = randomItem<NotificationType>(['nft', 'mining', 'presale'])
-    const userName = randomItem(FIRST_NAMES)
+    const nameIndex = Math.floor(Math.random() * 10000)
+    const userName = getRandomInternationalName(nameIndex)
 
     let message: string
     switch (type) {

@@ -225,10 +225,10 @@ bot.command('claim', async (ctx) => {
         return ctx.reply(`⏳ Please wait ${minutes}:${seconds.toString().padStart(2, '0')} before claiming again.`)
     }
     
-    const newBalance = (userData.balance || 50000) + 2000
+    const newBalance = (userData.balance || 50000) + 5000
     await setDoc(userRef, { ...userData, balance: newBalance, lastClaim: now }, { merge: true })
     
-    await ctx.reply(`✅ Successfully claimed 2,000 PAWS!\nNew balance: ${newBalance.toLocaleString()} PAWS`)
+    await ctx.reply(`✅ Successfully claimed 5,000 PAWS!\nNew balance: ${newBalance.toLocaleString()} PAWS`)
 })
 
 /**
@@ -241,7 +241,7 @@ bot.command('help', async (ctx) => {
         `/invite - Get your referral link\n` +
         `/leaderboard - View top holders\n` +
         `/tokenomics - View token distribution\n` +
-        `/claim - Claim hourly reward (2,000 PAWS)\n` +
+        `/claim - Claim hourly reward (5,000 PAWS)\n` +
         `/help - Show this help message\n\n` +
         `🌐 Website: https://pawsclone.vercel.app`
     

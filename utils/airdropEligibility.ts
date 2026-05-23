@@ -6,6 +6,8 @@ export interface AirdropStatus {
     hasTonTransaction: boolean
     isEligible: boolean
     progress: number
+    miningSessionsRemaining: number
+    txCompleted: boolean
 }
 
 export function checkAirdropEligibility(
@@ -28,6 +30,8 @@ export function checkAirdropEligibility(
         miningSessionsMet,
         hasTonTransaction,
         isEligible,
-        progress
+        progress,
+        miningSessionsRemaining: Math.max(0, MINING_REQUIRED - miningSessions),
+        txCompleted: hasTonTransaction
     }
 }

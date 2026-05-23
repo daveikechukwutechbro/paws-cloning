@@ -56,6 +56,11 @@ export function getRandomInternationalName(seed?: number): string {
     return randomCountry[Math.floor(Math.random() * randomCountry.length)]
 }
 
+export function getRandomInternationalNameWithFallback(seed: number): string {
+    const name = getRandomInternationalName(seed)
+    return name
+}
+
 export function getRandomInternationalNames(count: number): string[] {
     const names: string[] = []
     const usedIndices = new Set<number>()
