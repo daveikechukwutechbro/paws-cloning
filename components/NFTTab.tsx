@@ -425,7 +425,7 @@ const NFTTab = () => {
                                         <div className="relative z-10 flex h-full flex-col">
                                             <div className="relative w-full h-80 overflow-hidden flex items-center justify-center border-b border-white/10 bg-transparent">
                                                 <Image
-                                                    src={nft.fullImage}
+                                                    src={nft.icon || nft.fullImage}
                                                     alt={nft.name}
                                                     fill
                                                     className="object-contain object-center"

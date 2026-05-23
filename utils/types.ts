@@ -14,7 +14,16 @@ export type IconProps = {
 
 export type TabType = 'home' | 'leaderboard' | 'friends' | 'earn' | 'nft';
 
-export type NFTTier = 'Common' | 'Rare' | 'Epic' | 'Legendary';
+export type NFTTier = 'Common' | 'Rare' | 'Epic' | 'Legendary'
+
+// Reward constants in PAWS
+export const REWARDS = {
+    AD_VIEW: 5000,
+    MINING_PER_HOUR: 5000,
+    WALLET_CONNECT: 100000,
+    PARTNERS_TASK: 100000,
+    DEFAULT_TASK: 5000
+};
 
 export type NFTItem = {
     id: string;
