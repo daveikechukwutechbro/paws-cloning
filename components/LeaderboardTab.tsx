@@ -139,8 +139,8 @@ const baseBalances = [
     1_676_553_667, 1_423_524_112, 1_243_134_776,
     // Elite tier (next 4): Exact balances
     812_222_565, 782_111_453, 767_654_998, 743_675_633,
-    // Whale tier (8): Slightly lower than Elite minimum, trending downward
-    680_000_000, 620_000_000, 550_000_000, 480_000_000, 410_000_000, 350_000_000, 290_000_000, 240_000_000,
+    // Whale tier (7): Slightly lower than Elite minimum, trending downward
+    680_000_000, 620_000_000, 550_000_000, 480_000_000, 410_000_000, 350_000_000, 290_000_000,
     // Influencer tier (10): 1M-240M
     200_000_000, 170_000_000, 140_000_000, 110_000_000, 85_000_000, 65_000_000, 48_000_000, 32_000_000, 18_000_000, 10_000_000,
     // Trusted tier (10): 500K-10M
@@ -275,7 +275,9 @@ const LeaderboardTab = () => {
     // Build dynamic leaderboard data sequentially to enforce food chain
     const leaderboardData: LeaderboardItem[] = []
     const tierOrder = ['Newcomer', 'Active', 'Trusted', 'Influencer', 'Whale', 'Elite', 'Legend']
-    const daysSinceEpoch = Math.floor(Date.now() / 86400000)
+    const weekDuration = 7 * 86400000
+    const weeksSinceEpoch = Math.floor(Date.now() / weekDuration)
+    const weekProgress = Math.min(1, (Date.now() % weekDuration) / weekDuration)
 
     baseBalances.forEach((balance, index) => {
         const tier = getUserTier(balance)
@@ -287,32 +289,38 @@ const LeaderboardTab = () => {
         let adjustedBalance = balance
 
         if (tier.label === 'Newcomer') {
-            // Newcomer: static base balance (same for all new users)
             adjustedBalance = balance
-        } else if (tier.label === 'Active' || tier.label === 'Trusted' || tier.label === 'Influencer' || tier.label === 'Whale') {
-            // These tiers: balances always changing organically (like earning at different split seconds)
-            // SLOWER changes: use minutes for slower oscillation
+        } else if (tier.label === 'Active' || tier.label === 'Trusted' || tier.label === 'Influencer') {
             const now = Date.now() / 1000 / 60
-            const tierSpeed = tier.label === 'Active' ? 0.3 : tier.label === 'Trusted' ? 0.25 : tier.label === 'Influencer' ? 0.2 : 0.15
+            const tierSpeed = tier.label === 'Active' ? 0.3 : tier.label === 'Trusted' ? 0.25 : 0.2
             const timeFactor = now * tierSpeed + index * 3.14159
             const wave1 = Math.sin(timeFactor * 0.3) * 0.015
             const wave2 = Math.sin(timeFactor * 0.7 + index) * 0.01
             const wave3 = Math.sin(timeFactor * 1.5 + index * 0.7) * 0.008
             const fluctuation = wave1 + wave2 + wave3
             adjustedBalance = Math.floor(balance * (1 + fluctuation))
-
-            // FOOD CHAIN: Ensure this person stays below the person directly above
             if (leaderboardData.length > 0) {
                 const personAbove = leaderboardData[leaderboardData.length - 1]
                 if (adjustedBalance >= personAbove.balance) {
                     adjustedBalance = Math.floor(personAbove.balance * 0.95)
                 }
             }
+        } else if (tier.label === 'Whale') {
+            // Whales earn 100-300M PAWS per week, growing over the week
+            const weeklyAdd = 100_000_000 + ((index * 37 + 13) % 201) * 1_000_000
+            const totalGrowth = weeklyAdd * (weeksSinceEpoch + weekProgress)
+            adjustedBalance = Math.floor(balance + totalGrowth)
+            if (leaderboardData.length > 0) {
+                const personAbove = leaderboardData[leaderboardData.length - 1]
+                if (adjustedBalance >= personAbove.balance) {
+                    adjustedBalance = Math.floor(personAbove.balance * 0.90)
+                }
+            }
         } else if (tier.label === 'Elite') {
-            // Elite: constant names, slow growth every ~5 days (+8% per cycle)
-            const growthMultiplier = 1 + Math.floor(daysSinceEpoch / 5) * 0.08
-            adjustedBalance = Math.floor(balance * growthMultiplier)
-            // Ensure Elite < Legend (person above)
+            // Elite earn 400-500M PAWS per week
+            const weeklyAdd = 400_000_000 + ((index * 53 + 7) % 101) * 1_000_000
+            const totalGrowth = weeklyAdd * (weeksSinceEpoch + weekProgress)
+            adjustedBalance = Math.floor(balance + totalGrowth)
             if (leaderboardData.length > 0) {
                 const personAbove = leaderboardData[leaderboardData.length - 1]
                 if (adjustedBalance >= personAbove.balance) {
@@ -320,13 +328,10 @@ const LeaderboardTab = () => {
                 }
             }
         } else if (tier.label === 'Legend') {
-            // Legends: constant names, slow but consistent growth (+2% every day)
-            // Organic growth: use sine waves for natural feel
-            const now = Date.now() / 1000 / 60 / 60 // hours since epoch
-            const baseGrowth = 1 + daysSinceEpoch * 0.02
-            const organicWave = 1 + Math.sin(now * 0.1 + index) * 0.01 // ±1% wave
-            adjustedBalance = Math.floor(balance * baseGrowth * organicWave)
-            // Enforce food chain: Legend must stay above Elite
+            // Legends earn 500-600M PAWS per week
+            const weeklyAdd = 500_000_000 + ((index * 71 + 3) % 101) * 1_000_000
+            const totalGrowth = weeklyAdd * (weeksSinceEpoch + weekProgress)
+            adjustedBalance = Math.floor(balance + totalGrowth)
             if (leaderboardData.length > 0) {
                 const personAbove = leaderboardData[leaderboardData.length - 1]
                 if (adjustedBalance <= personAbove.balance) {

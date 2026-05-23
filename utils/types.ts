@@ -12,9 +12,7 @@ export type IconProps = {
     className?: string;
 }
 
-export type TabType = 'home' | 'leaderboard' | 'friends' | 'earn' | 'nft';
-
-export type NFTTier = 'Common' | 'Rare' | 'Epic' | 'Legendary'
+export type TabType = 'home' | 'leaderboard' | 'friends' | 'earn';
 
 // Reward constants in PAWS
 export const REWARDS = {
@@ -23,23 +21,4 @@ export const REWARDS = {
     WALLET_CONNECT: 100000,
     PARTNERS_TASK: 100000,
     DEFAULT_TASK: 5000
-};
-
-export type NFTItem = {
-    id: string;
-    name: string;
-    tier: NFTTier;
-    basePrice: number;
-    description: string;
-    icon: string;
-    glowColor: string;
-};
-
-export type PurchasedNFT = {
-    nftId: string;
-    name: string;
-    tier: NFTTier;
-    pricePaid: number;
-    purchasedAt: string;
-    transactionHash: string;
 };

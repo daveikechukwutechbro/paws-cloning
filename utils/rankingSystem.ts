@@ -12,7 +12,7 @@ export interface RankTier {
 export const RANK_TIERS: RankTier[] = [
     {
         label: 'Newcomer',
-        minBalance: 0,
+        minBalance: 50000,
         maxBalance: 100_000,
         color: '#868686',
         bgColor: 'rgba(134, 134, 134, 0.15)',
@@ -113,7 +113,7 @@ export function getProgressToNextTier(balance: number): number {
 export function getEstimatedRank(balance: number): string {
     const totalUsers = 2_000_000
     const distribution: { tierMin: number; tierMax: number; users: number }[] = [
-        { tierMin: 0, tierMax: 100_000, users: Math.floor(totalUsers * 0.70) },
+        { tierMin: 50000, tierMax: 100_000, users: Math.floor(totalUsers * 0.70) },
         { tierMin: 100_000, tierMax: 1_500_000, users: Math.floor(totalUsers * 0.15) },
         { tierMin: 1_500_000, tierMax: 10_000_000, users: Math.floor(totalUsers * 0.10) },
         { tierMin: 10_000_000, tierMax: 240_000_000, users: Math.floor(totalUsers * 0.035) },

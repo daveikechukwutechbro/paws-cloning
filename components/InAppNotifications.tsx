@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getRandomInternationalName } from '@/utils/internationalNames'
 
-type NotificationType = 'nft' | 'mining' | 'presale'
+type NotificationType = 'mining' | 'presale'
 
 interface Notification {
     id: number
@@ -37,22 +37,13 @@ function randomPawsAmount(): string {
     return randomItem(amounts)
 }
 
-const NFT_NAMES = [
-    'Cosmic Paw', 'Neon Claw', 'Crystal Fang', 'Shadow Mane',
-    'Thunder Pelt', 'Inferno Eye', 'Eternal Roar', 'Astral Wolf',
-    'Blazing Fox', 'Celestial Bear', 'Dark Panther', 'Ethereal Dragon'
-]
-
 function generateNotification(id: number): Notification {
-    const type = randomItem<NotificationType>(['nft', 'mining', 'presale'])
+    const type = randomItem<NotificationType>(['mining', 'presale'])
     const nameIndex = Math.floor(Math.random() * 10000)
     const userName = getRandomInternationalName(nameIndex)
 
     let message: string
     switch (type) {
-        case 'nft':
-            message = `just purchased ${randomItem(NFT_NAMES)} NFT for ${randomTonPrice()} TON`
-            break
         case 'mining':
             message = `boosted mining speed with ${randomItem(['Bronze', 'Silver', 'Gold'])} Miner for ${randomTonPrice()} TON`
             break
@@ -114,13 +105,11 @@ const InAppNotifications = () => {
     if (!currentNotification) return null
 
     const typeColors: Record<NotificationType, string> = {
-        nft: 'from-[#a855f7] to-[#7c3aed]',
         mining: 'from-[#007aff] to-[#0056cc]',
         presale: 'from-[#22c55e] to-[#16a34a]'
     }
 
     const typeIcons: Record<NotificationType, string> = {
-        nft: '💎',
         mining: '⚡',
         presale: '🪙'
     }

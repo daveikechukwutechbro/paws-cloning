@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { applyReferralReward, getOrCreateUser } from '@/utils/userUtils'
 import { ActiveMiningUpgrade } from '@/utils/miningUpgrades'
-import { PurchasedNFT } from '@/utils/types'
 
 export interface User {
     id: string
@@ -22,7 +21,6 @@ export interface User {
     completedTasks?: string[]
     miningUpgrades?: ActiveMiningUpgrade[]
     miningUpgradedAt?: string
-    nfts?: PurchasedNFT[]
 }
 
 type UserContextType = {
@@ -112,8 +110,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     referralRewardClaimed: false,
                     isPremium,
                     completedTasks: [],
-                    miningUpgrades: [],
-                    nfts: []
+                    miningUpgrades: []
                 }
                 setUser(fallbackUser)
             }
@@ -133,8 +130,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 referralRewardClaimed: false,
                 isPremium,
                 completedTasks: [],
-                miningUpgrades: [],
-                nfts: []
+                miningUpgrades: []
             }
             setUser(fallbackUser)
         } finally {

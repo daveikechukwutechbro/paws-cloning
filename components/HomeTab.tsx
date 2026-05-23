@@ -10,8 +10,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance } from '@/utils/userUtils'
-import { processPreSalePurchase } from '@/utils/userUtils'
-import { PRESALE_PACKAGES, PRESALE_RECEIVING_WALLET } from '@/utils/preSale'
 import {
     connectWalletWithProvider,
     disconnectWallet,
@@ -24,9 +22,9 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
 import { getUserTier, getNextTier, getProgressToNextTier, getEstimatedRank, RANK_TIERS } from '@/utils/rankingSystem'
 import TokenomicsModal from '@/components/TokenomicsModal'
-import MiningUpgradeShop from '@/components/MiningUpgradeShop'
 import AirdropEligibility from '@/components/AirdropEligibility'
-import { DEFAULT_MINING_RATE, getMiningBonusRate, ActiveMiningUpgrade } from '@/utils/miningUpgrades'
+import { getCurrentUserCount, formatUserCount } from '@/utils/userGrowth'
+import { REWARDS } from '@/utils/types'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -55,64 +53,15 @@ const HomeTab = () => {
     const [isClaiming, setIsClaiming] = useState(false)
     const [showRankModal, setShowRankModal] = useState(false)
     const [showTokenomics, setShowTokenomics] = useState(false)
-    const [showMiningShop, setShowMiningShop] = useState(false)
-    const [activeMiningUpgrades, setActiveMiningUpgrades] = useState<ActiveMiningUpgrade[]>([])
-    const [selectedPresale, setSelectedPresale] = useState<string | null>(null)
-    const [presaleTxHash, setPresaleTxHash] = useState('')
-    const [presaleProcessing, setPresaleProcessing] = useState(false)
-    const [presaleSuccess, setPresaleSuccess] = useState(false)
-    const [presaleError, setPresaleError] = useState<string | null>(null)
-
-    // Your TON receiving wallet address for mining upgrades
-    const RECEIVING_TON_WALLET = 'UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J'
+    const [airdropCount, setAirdropCount] = useState(0)
+    const AIRDROP_TARGET = 2_000_000
     
-    const buyPackages = PRESALE_PACKAGES
-
-    const copyPresaleAddress = () => {
-        navigator.clipboard.writeText(PRESALE_RECEIVING_WALLET)
-    }
-
-    const handlePresalePurchase = async (packageId: string, amount: number) => {
-        if (!user?.id || !presaleTxHash) {
-            setPresaleError('Please enter the transaction hash')
-            return
-        }
-
-        if (presaleTxHash.length < 64) {
-            setPresaleError('Invalid transaction hash')
-            return
-        }
-
-        setPresaleProcessing(true)
-        setPresaleError(null)
-
-        try {
-            const result = await processPreSalePurchase(user.id, packageId, amount, presaleTxHash)
-            
-            if (result.success) {
-                setPresaleSuccess(true)
-                setTimeout(() => {
-                    setPresaleSuccess(false)
-                    setSelectedPresale(null)
-                    setPresaleTxHash('')
-                    setShowBuyMenu(false)
-                    refreshUser()
-                }, 3000)
-            } else {
-                setPresaleError(result.error || 'Verification failed')
-            }
-        } catch (err: any) {
-            setPresaleError(err.message || 'Failed to process purchase')
-        } finally {
-            setPresaleProcessing(false)
-        }
-    }
-
-    const formatPresaleAmount = (amount: number) => {
-        if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(0)}B PAWS`
-        if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(0)}M PAWS`
-        return amount.toLocaleString()
-    }
+    const buyPackages = [
+        { name: '1,000 PAWS', price: '$1', amount: 1000 },
+        { name: '5,000 PAWS', price: '$4', amount: 5000 },
+        { name: '10,000 PAWS', price: '$7', amount: 10000 },
+        { name: '50,000 PAWS', price: '$30', amount: 50000 },
+    ]
 
     const syncBalanceFromFirebase = useCallback(async () => {
         if (!userId) return
@@ -137,10 +86,16 @@ const HomeTab = () => {
     }, [userId, syncBalanceFromFirebase])
 
     useEffect(() => {
+        setAirdropCount(getCurrentUserCount())
+        const interval = setInterval(() => setAirdropCount(getCurrentUserCount()), 30000)
+        return () => clearInterval(interval)
+    }, [])
+
+    useEffect(() => {
         const savedLastClaim = localStorage.getItem(timerKey)
         if (savedLastClaim) {
             const lastClaimTime = parseInt(savedLastClaim)
-            const remaining = 3600000 - (Date.now() - lastClaimTime)
+            const remaining = 180000 - (Date.now() - lastClaimTime)
             if (remaining > 0) {
                 setTimeRemaining(remaining)
             }
@@ -164,7 +119,7 @@ const HomeTab = () => {
             const saved = localStorage.getItem(timerKey)
             if (saved) {
                 const lastClaimTime = parseInt(saved)
-                const remaining = 3600000 - (Date.now() - lastClaimTime)
+                const remaining = 180000 - (Date.now() - lastClaimTime)
                 setTimeRemaining(Math.max(0, remaining))
             }
         }, 1000)
@@ -176,10 +131,7 @@ const HomeTab = () => {
         
         setIsClaiming(true)
         try {
-            const reward = user?.miningUpgrades ? 
-                (DEFAULT_MINING_RATE + getMiningBonusRate(user.miningUpgrades)) : 
-                DEFAULT_MINING_RATE
-            const newBalance = displayBalance + reward
+            const newBalance = displayBalance + REWARDS.MINING_PER_HOUR
             setDisplayBalance(newBalance)
             localStorage.setItem(balanceKey, newBalance.toString())
             
@@ -330,7 +282,7 @@ const HomeTab = () => {
                 </div>
             )}
 
-            <div className="flex flex-col items-center mt-4">
+            <div className="flex flex-col items-center mt-8">
                 <PawsLogo className="w-28 h-28 mb-4" />
                 <div className="flex items-center gap-1 text-center">
                     <div className="text-6xl font-bold mb-1">{displayBalance.toLocaleString()}</div>
@@ -354,12 +306,8 @@ const HomeTab = () => {
             <div className="px-4 mt-6">
                 <div className="bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg p-4">
                     <div className="text-center mb-3">
-                        <div className="text-lg font-medium">
-                            Mining Reward: {user && user.miningUpgrades ? 
-                                (DEFAULT_MINING_RATE + getMiningBonusRate(user.miningUpgrades)).toLocaleString() : 
-                                DEFAULT_MINING_RATE.toLocaleString()} PAWS
-                        </div>
-                        <div className="text-sm text-[#868686]">Claim every 1 hour</div>
+                        <div className="text-lg font-medium">Hourly Reward</div>
+                        <div className="text-sm text-[#868686]">Claim {REWARDS.MINING_PER_HOUR.toLocaleString()} PAWS every hour</div>
                     </div>
                     {timeRemaining > 0 ? (
                         <div className="text-center">
@@ -372,27 +320,10 @@ const HomeTab = () => {
                             disabled={isClaiming}
                             className="w-full bg-[#007aff] text-white py-2 rounded-lg font-medium hover:bg-[#0056cc] transition-colors disabled:opacity-50"
                         >
-                            {isClaiming ? 'Claiming...' : `Claim ${user && user.miningUpgrades ? 
-                                (DEFAULT_MINING_RATE + getMiningBonusRate(user.miningUpgrades)).toLocaleString() : 
-                                DEFAULT_MINING_RATE.toLocaleString()} PAWS`}
+                            {isClaiming ? 'Claiming...' : `Claim ${REWARDS.MINING_PER_HOUR.toLocaleString()} PAWS`}
                         </button>
                     )}
                 </div>
-
-                {/* Mining Speed Upgrade Button */}
-                <button
-                    onClick={() => setShowMiningShop(true)}
-                    className="w-full mt-3 bg-gradient-to-r from-[#f59e0b] to-[#ef4444] text-white rounded-lg px-4 py-3 flex items-center justify-between"
-                >
-                    <div className="flex items-center gap-3">
-                        <span className="text-2xl">⚡</span>
-                        <div className="text-left">
-                            <div className="font-semibold">Boost Mining Speed</div>
-                            <div className="text-xs text-white/80">Up to +100,000 PAWS/hr</div>
-                        </div>
-                    </div>
-                    <ArrowRight className="w-6 h-6" />
-                </button>
             </div>
 
             <div className="px-4 mt-8 mb-8">
@@ -435,161 +366,70 @@ const HomeTab = () => {
                     <ArrowRight className="w-6 h-6 text-gray-400" />
                 </button>
 
-                {/* Airdrop Eligibility */}
-                <div className="mt-3">
+                {/* Airdrop Growth Banner */}
+                <div className="mt-3 bg-gradient-to-r from-[#22c55e]/20 via-[#4c9ce2]/20 to-[#f59e0b]/20 border border-[#22c55e]/30 rounded-xl p-4 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[#22c55e]/5 animate-pulse" />
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xl">🪂</span>
+                            <span className="text-sm font-bold text-[#22c55e] uppercase tracking-wider">Airdrop Growth</span>
+                            <div className="ml-auto text-[10px] text-[#868686]">2-month campaign</div>
+                        </div>
+                        <div className="text-lg font-bold text-[#fefefe]">{formatUserCount(airdropCount)} of {formatUserCount(AIRDROP_TARGET)} users</div>
+                        <div className="text-xs text-[#d1d5db] mt-1">Live community growth toward the 2M user target</div>
+                        <div className="mt-3 w-full bg-[#ffffff0d] rounded-full h-2.5 overflow-hidden">
+                            <div
+                                className="h-full rounded-full transition-all duration-700 ease-out bg-gradient-to-r from-[#4c9ce2] to-[#22c55e]"
+                                style={{ width: `${Math.min(100, Math.floor((airdropCount / AIRDROP_TARGET) * 100))}%` }}
+                            />
+                        </div>
+                        <div className="mt-2 flex items-center justify-between text-xs text-[#d1d5db]">
+                            <span>Starting from 1.4M and growing to 2M</span>
+                            <span>{Math.min(100, Math.floor((airdropCount / AIRDROP_TARGET) * 100))}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-4">
                     <AirdropEligibility />
                 </div>
 
                 <button 
                     onClick={() => setShowBuyMenu(!showBuyMenu)}
-                    className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] border border-[#22c55e] rounded-xl px-4 py-3 flex items-center justify-between mt-3"
+                    className="w-full bg-[#007aff] border border-[#007aff] rounded-lg px-4 py-3 flex items-center justify-between mt-3"
                 >
                     <div className="flex items-center gap-3 font-medium text-white">
-                        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                            <span>🪙</span>
-                        </div>
-                        <div>
-                            <div className="font-bold">Pre-Sale LIVE</div>
-                            <div className="text-xs text-white/80">Buy PAWS with TON</div>
-                        </div>
+                        <PawsLogo className="w-8 h-8" />
+                        <span>Buy PAWS</span>
                     </div>
                     <ArrowRight className={`w-6 h-6 text-white transition-transform ${showBuyMenu ? 'rotate-90' : ''}`} />
                 </button>
 
                 {showBuyMenu && (
-                    <div className="mt-2 bg-[#151516] border border-[#22c55e]/30 rounded-2xl overflow-hidden">
-                        {presaleSuccess ? (
-                            <div className="p-8 text-center">
-                                <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#22c55e] to-[#16a34a] flex items-center justify-center text-4xl mb-4 animate-bounce">
-                                    ✓
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Purchase Successful!</h3>
-                                <p className="text-gray-400">Your PAWS tokens have been credited</p>
+                    <div className="mt-2 bg-[#1a1a1b] border-[1px] border-[#2d2d2e] rounded-lg overflow-hidden p-4">
+                        <div className="text-center mb-4">
+                            <div className="text-sm text-gray-400 mb-2">Send TON to this address:</div>
+                            <div className="text-xs bg-[#2d2d2e] p-2 rounded break-all text-white">
+                                UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J
                             </div>
-                        ) : selectedPresale ? (
-                            <div className="p-4">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-bold text-white">Complete Purchase</h3>
-                                    <button onClick={() => setSelectedPresale(null)} className="w-8 h-8 rounded-full bg-[#2d2d2e] flex items-center justify-center text-gray-400">✕</button>
+                            <button 
+                                onClick={() => navigator.clipboard.writeText('UQDQG85BG8NZpaZzktagBiS_Y5sllQQT4iX43wM_XuK4cl3J')}
+                                className="mt-2 text-[#007aff] text-sm"
+                            >
+                                Copy Address
+                            </button>
+                        </div>
+                        <div className="text-center text-xs text-gray-500 mb-4">
+                            After sending, contact admin to credit your PAWS
+                        </div>
+                        <div className="space-y-2">
+                            {buyPackages.map((pkg, index) => (
+                                <div key={index} className="flex justify-between items-center p-2 bg-[#2d2d2e] rounded">
+                                    <span className="text-white">{pkg.name}</span>
+                                    <span className="text-gray-400">{pkg.price}</span>
                                 </div>
-                                
-                                {(() => {
-                                    const pkg = PRESALE_PACKAGES.find(p => p.id === selectedPresale)
-                                    if (!pkg) return null
-                                    return (
-                                        <div className="bg-[#1f1f20] rounded-xl p-4 mb-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#007aff] to-[#0056cc] flex items-center justify-center text-2xl">🪙</div>
-                                                <div>
-                                                    <div className="font-bold text-white text-lg">{pkg.name}</div>
-                                                    <div className="text-[#22c55e] text-xl font-bold">{pkg.priceTon} TON</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )
-                                })()}
-
-                                <div className="mb-4">
-                                    <label className="text-sm text-gray-400 block mb-2">Send {PRESALE_PACKAGES.find(p => p.id === selectedPresale)?.priceTon} TON to:</label>
-                                    <div className="bg-[#1f1f20] rounded-xl p-3 break-all text-sm text-[#22c55e] font-mono">
-                                        {PRESALE_RECEIVING_WALLET}
-                                    </div>
-                                    <button onClick={copyPresaleAddress} className="mt-2 text-[#007aff] text-xs flex items-center gap-1">
-                                        📋 Copy Address
-                                    </button>
-                                </div>
-
-                                <div className="mb-4">
-                                    <label className="text-sm text-gray-400 block mb-2">Transaction Hash (TX Hash)</label>
-                                    <input
-                                        type="text"
-                                        value={presaleTxHash}
-                                        onChange={(e) => {
-                                            setPresaleTxHash(e.target.value)
-                                        }}
-                                        placeholder="Paste your TON transaction hash here..."
-                                        className="w-full bg-[#1f1f20] text-white rounded-xl px-4 py-3 text-sm border border-[#2d2d2e] focus:border-[#007aff] outline-none"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">Find TX hash in your TON wallet after sending</p>
-                                </div>
-
-                                {presaleError && (
-                                    <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm">
-                                        ⚠️ {presaleError}
-                                    </div>
-                                )}
-
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => setSelectedPresale(null)}
-                                        className="flex-1 py-3 rounded-xl bg-[#2d2d2e] text-white font-medium"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            const pkg = PRESALE_PACKAGES.find(p => p.id === selectedPresale)
-                                            if (pkg) handlePresalePurchase(pkg.id, pkg.amount)
-                                        }}
-                                        disabled={presaleProcessing || !presaleTxHash}
-                                        className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#22c55e] to-[#16a34a] text-white font-bold disabled:opacity-50"
-                                    >
-                                        {presaleProcessing ? 'Processing...' : 'Claim Tokens'}
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="bg-gradient-to-r from-[#22c55e]/20 to-transparent p-4 border-b border-[#2d2d2e]">
-                                    <div className="text-sm text-gray-400 mb-1">Send TON to:</div>
-                                    <div className="text-xs bg-[#1f1f20] p-2 rounded-lg break-all text-[#22c55e] font-mono">
-                                        {PRESALE_RECEIVING_WALLET}
-                                    </div>
-                                    <button 
-                                        onClick={copyPresaleAddress}
-                                        className="mt-2 text-[#007aff] text-xs flex items-center gap-1"
-                                    >
-                                        📋 Copy Address
-                                    </button>
-                                </div>
-                                
-                                <div className="p-3 bg-[#f59e0b]/10 border-b border-[#2d2d2e]">
-                                    <div className="flex items-center gap-2 text-[#f59e0b] text-xs">
-                                        <span>⚠️</span>
-                                        <span>Pre-sale ends when hard cap is reached. Send exact TON amount.</span>
-                                    </div>
-                                </div>
-                                
-                                <div className="space-y-2 p-3">
-                                    {PRESALE_PACKAGES.map((pkg) => (
-                                        <button 
-                                            key={pkg.id} 
-                                            type="button"
-                                            onClick={() => setSelectedPresale(pkg.id)}
-                                            className="w-full flex justify-between items-center p-3 bg-[#1f1f20] rounded-xl border border-[#2d2d2e] cursor-pointer hover:border-[#007aff] transition-colors active:scale-[0.98]"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#007aff] to-[#0056cc] flex items-center justify-center text-lg">🪙</div>
-                                                <div className="text-left">
-                                                    <span className="text-white font-semibold block">{pkg.name}</span>
-                                                    <span className="text-xs text-gray-500">Token Amount</span>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-white">{pkg.priceTon}</div>
-                                                <div className="text-xs text-gray-500">TON</div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                                
-                                <div className="p-4 bg-[#0f0f10] border-t border-[#2d2d2e]">
-                                    <div className="text-center text-xs text-gray-500">
-                                        Select a package → Send TON → Enter TX Hash → Tokens credited instantly
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                            ))}
+                        </div>
                     </div>
             )}
 
@@ -683,18 +523,6 @@ const HomeTab = () => {
                     </div>
                 </div>
             , document.body)}
-
-            {/* Mining Upgrade Shop */}
-            {showMiningShop && typeof document !== 'undefined' && createPortal(
-                <MiningUpgradeShop 
-                    onClose={() => setShowMiningShop(false)}
-                    onPurchaseComplete={() => {
-                        refreshUser()
-                        setShowMiningShop(false)
-                    }}
-                />,
-                document.body
-            )}
         </div>
     )
 }
