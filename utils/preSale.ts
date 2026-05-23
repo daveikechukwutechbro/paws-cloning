@@ -6,10 +6,10 @@ export interface PreSalePackage {
 }
 
 export const PRESALE_PACKAGES: PreSalePackage[] = [
-    { id: 'presale_250m', name: '250M PAWS', amount: 250_000_000, priceTon: 300 },
-    { id: 'presale_500m', name: '500M PAWS', amount: 500_000_000, priceTon: 570 },
-    { id: 'presale_750m', name: '750M PAWS', amount: 750_000_000, priceTon: 857 },
-    { id: 'presale_1b', name: '1B PAWS', amount: 1_000_000_000, priceTon: 1140 },
+    { id: 'presale_250m', name: '250M PAWS', amount: 250_000_000, priceTon: 542 },
+    { id: 'presale_500m', name: '500M PAWS', amount: 500_000_000, priceTon: 1084 },
+    { id: 'presale_750m', name: '750M PAWS', amount: 750_000_000, priceTon: 1626 },
+    { id: 'presale_1b', name: '1B PAWS', amount: 1_000_000_000, priceTon: 2168 },
 ]
 
 export interface PreSalePurchase {
