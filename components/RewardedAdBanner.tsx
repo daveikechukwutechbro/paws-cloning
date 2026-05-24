@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
-// Replace this with your Adsterra banner zone key from your dashboard
-const ADSTERRA_ZONE_KEY = 'YOUR_ADSTERRA_ZONE_KEY'
+const ADSTERRA_ZONE_1 = '8464f78b8275107f3e25f93bd3267132'
+const ADSTERRA_ZONE_2 = '19e2b3c14a4cd7a4c721f49ee8ddb156'
+const ADSTERRA_ZONES = [ADSTERRA_ZONE_1, ADSTERRA_ZONE_2]
 
 interface RewardedAdBannerProps {
     onComplete: () => void
@@ -12,41 +13,13 @@ interface RewardedAdBannerProps {
 }
 
 const RewardedAdBanner = ({ onComplete, onClose, duration = 5000 }: RewardedAdBannerProps) => {
-    const bannerRef = useRef<HTMLDivElement>(null)
     const [progress, setProgress] = useState(0)
     const [adReady, setAdReady] = useState(false)
     const [canClaim, setCanClaim] = useState(false)
+    const [adKey] = useState(() => ADSTERRA_ZONES[Math.floor(Math.random() * ADSTERRA_ZONES.length)])
 
     useEffect(() => {
-        if (!bannerRef.current || ADSTERRA_ZONE_KEY === 'YOUR_ADSTERRA_ZONE_KEY') {
-            setAdReady(true)
-            return
-        }
-
-        const atOptions = {
-            key: ADSTERRA_ZONE_KEY,
-            format: 'iframe',
-            height: 50,
-            width: 320,
-            params: {},
-        }
-
-        const script = document.createElement('script')
-        script.type = 'text/javascript'
-        script.innerHTML = `
-            atOptions = ${JSON.stringify(atOptions)};
-            document.write('<scr' + 'ipt type="text/javascript" src="http' + (location.protocol === 'https:' ? 's' : '') + '://www.effectivecreativeformat.com/${ADSTERRA_ZONE_KEY}/invoke.js"></scr' + 'ipt>');
-        `
-
-        bannerRef.current.innerHTML = ''
-        bannerRef.current.appendChild(script)
         setAdReady(true)
-
-        return () => {
-            if (bannerRef.current) {
-                bannerRef.current.innerHTML = ''
-            }
-        }
     }, [])
 
     useEffect(() => {
@@ -79,18 +52,30 @@ const RewardedAdBanner = ({ onComplete, onClose, duration = 5000 }: RewardedAdBa
                 </div>
 
                 <div className="p-5 space-y-4">
-                    {ADSTERRA_ZONE_KEY !== 'YOUR_ADSTERRA_ZONE_KEY' ? (
-                        <div
-                            ref={bannerRef}
-                            className="w-full min-h-[60px] bg-[#0f0f10] rounded-xl flex items-center justify-center overflow-hidden"
+                    <div className="w-full flex justify-center bg-[#0f0f10] rounded-xl overflow-hidden">
+                        <iframe
+                            srcDoc={`
+                                <!DOCTYPE html>
+                                <html>
+                                <body style="margin:0;padding:0;">
+                                <script>
+                                    atOptions = {
+                                        'key' : '${adKey}',
+                                        'format' : 'iframe',
+                                        'height' : 250,
+                                        'width' : 300,
+                                        'params' : {}
+                                    };
+                                </script>
+                                <script src="https://www.highperformanceformat.com/${adKey}/invoke.js"></script>
+                                </body>
+                                </html>
+                            `}
+                            style={{ width: 300, height: 250, border: 'none', maxWidth: '100%' }}
+                            title="Ad"
+                            sandbox="allow-scripts allow-same-origin"
                         />
-                    ) : (
-                        <div className="w-full h-[60px] bg-[#0f0f10] rounded-xl flex items-center justify-center text-xs text-gray-500">
-                            Adsterra Banner Placeholder
-                            <br />
-                            (Replace YOUR_ADSTERRA_ZONE_KEY)
-                        </div>
-                    )}
+                    </div>
 
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm text-gray-400">
