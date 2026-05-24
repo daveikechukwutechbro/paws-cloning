@@ -8,7 +8,7 @@ import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance, updateCompletedTask } from '@/utils/userUtils'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
-import { taskWhitePaws, taskBoost } from '@/images'
+import { taskWhitePaws } from '@/images'
 import PawsLogo from '@/icons/PawsLogo'
 import TaskVideo from '@/icons/TaskVideo'
 import TaskImage from '@/icons/TaskImage'
@@ -59,14 +59,14 @@ const TasksTab = () => {
     const [adWatchProgress, setAdWatchProgress] = useState<Record<string, number>>({})
     const [adRewardKey, setAdRewardKey] = useState<string | null>(null)
     const [adCooldowns, setAdCooldowns] = useState<Record<string, number>>({})
-    const [dailyAdCount, setDailyAdCount] = useState(0)
+    const [dailyAdCounts, setDailyAdCounts] = useState<Record<string, number>>({})
     const [isOnline, setIsOnline] = useState(true)
     const [balance, setBalance] = useState(50000)
     const [toastMessage, setToastMessage] = useState<string | null>(null)
 
     const AD_COOLDOWN_MIN = 30000
     const AD_COOLDOWN_MAX = 40000
-    const DAILY_AD_LIMIT = 20
+    const MAX_PER_TASK = 3
     const AD_TASK_IDS = new Set(['watch_video_ad', 'watch_image_ad', 'listen_reward'])
 
     const communities = [
@@ -108,10 +108,10 @@ const TasksTab = () => {
 
     useEffect(() => {
         const today = new Date().toDateString()
-        const stored = localStorage.getItem(`adDailyCount_${user?.id}`)
+        const stored = localStorage.getItem(`adDailyCounts_${user?.id}`)
         if (stored) {
-            const { date, count } = JSON.parse(stored)
-            setDailyAdCount(date === today ? count : 0)
+            const { date, counts } = JSON.parse(stored)
+            setDailyAdCounts(date === today ? counts : {})
         }
     }, [user?.id])
 
@@ -233,11 +233,11 @@ const TasksTab = () => {
             if (isAd) {
                 const cooldown = AD_COOLDOWN_MIN + Math.floor(Math.random() * (AD_COOLDOWN_MAX - AD_COOLDOWN_MIN))
                 setAdCooldowns(prev => ({ ...prev, [taskId]: cooldown }))
-                const newCount = dailyAdCount + 1
-                setDailyAdCount(newCount)
-                localStorage.setItem(`adDailyCount_${user.id}`, JSON.stringify({
+                const newCount = (dailyAdCounts[taskId] || 0) + 1
+                setDailyAdCounts(prev => ({ ...prev, [taskId]: newCount }))
+                localStorage.setItem(`adDailyCounts_${user.id}`, JSON.stringify({
                     date: new Date().toDateString(),
-                    count: newCount
+                    counts: { ...dailyAdCounts, [taskId]: newCount }
                 }))
                 setAdWatchProgress(prev => {
                     const newProgress = { ...prev }
@@ -276,8 +276,8 @@ const TasksTab = () => {
             showToast(`Wait ${Math.ceil(adCooldowns[taskId] / 1000)}s before next ad`)
             return
         }
-        if (dailyAdCount >= DAILY_AD_LIMIT) {
-            showToast('Daily ad limit reached! Come back tomorrow.')
+        if ((dailyAdCounts[taskId] || 0) >= MAX_PER_TASK) {
+            showToast('Daily limit reached for this ad. Try another type.')
             return
         }
         setAdRewardKey(taskId)
@@ -319,14 +319,6 @@ const TasksTab = () => {
             icon: taskWhitePaws.src,
             title: 'Put 🐾 in your name',
             description: 'Update your Telegram name with 🐾',
-            reward: 5000,
-            type: 'social',
-        },
-        {
-            id: 'boost_channel',
-            icon: taskBoost.src,
-            title: 'Boost PAWS channel',
-            description: 'Help boost our Telegram channel',
             reward: 5000,
             type: 'social',
         },
@@ -451,8 +443,9 @@ const TasksTab = () => {
 
         if (task.type === 'ad' || task.type === 'listen') {
             const taskCooldown = adCooldowns[task.id] || 0
+            const taskCount = dailyAdCounts[task.id] || 0
             const onCooldown = taskCooldown > 0
-            const atLimit = dailyAdCount >= DAILY_AD_LIMIT
+            const atLimit = taskCount >= MAX_PER_TASK
             const disabled = onCooldown || atLimit || !isOnline
             return (
                 <button 
@@ -460,7 +453,7 @@ const TasksTab = () => {
                     disabled={disabled}
                     className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#e0e0e0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {!isOnline ? 'Offline' : atLimit ? 'Limit Reached' : onCooldown ? `${Math.ceil(taskCooldown / 1000)}s` : 'Watch'}
+                    {!isOnline ? 'Offline' : atLimit ? 'Done' : onCooldown ? `${Math.ceil(taskCooldown / 1000)}s` : `Watch (${MAX_PER_TASK - taskCount})`}
                 </button>
             )
         }
@@ -507,7 +500,6 @@ const TasksTab = () => {
                         </div>
                         <div className="text-lg font-bold text-white">{balance.toLocaleString()}</div>
                         <div className="text-xs text-gray-500">PAWS</div>
-                        <div className="text-[10px] text-gray-600 mt-1">Ads today: {dailyAdCount}/{DAILY_AD_LIMIT}</div>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { applyReferralReward, getOrCreateUser } from '@/utils/userUtils'
 import { ActiveMiningUpgrade } from '@/utils/miningUpgrades'
+import { doc, onSnapshot } from 'firebase/firestore'
+import { db } from '@/utils/firebaseClient'
 
 export interface User {
     id: string
@@ -146,6 +148,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         loadUser()
     }, [loadUser])
+
+    useEffect(() => {
+        if (!user?.id) return
+        const userRef = doc(db, 'users', user.id)
+        const unsub = onSnapshot(userRef, (snap) => {
+            if (snap.exists()) {
+                const data = snap.data()
+                setUser(prev => prev ? {
+                    ...prev,
+                    balance: data.balance ?? prev.balance,
+                    completedTasks: data.completedTasks || [],
+                    miningUpgrades: data.miningUpgrades || [],
+                    username: data.username || prev.username,
+                    referralCount: data.referralCount ?? prev.referralCount,
+                    referralEarnings: data.referralEarnings ?? prev.referralEarnings,
+                } : null)
+            }
+        }, (err) => {
+            console.error('User snapshot error:', err)
+        })
+        return () => unsub()
+    }, [user?.id])
 
     return (
         <UserContext.Provider value={{ user, loading, refreshUser }}>

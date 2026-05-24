@@ -89,6 +89,12 @@ const HomeTab = () => {
     }, [userId, syncBalanceFromFirebase])
 
     useEffect(() => {
+        if (user?.balance && user.balance !== displayBalance) {
+            setDisplayBalance(user.balance)
+        }
+    }, [user?.balance])
+
+    useEffect(() => {
         setAirdropCount(getCurrentUserCount())
         const interval = setInterval(() => setAirdropCount(getCurrentUserCount()), 30000)
         return () => clearInterval(interval)
