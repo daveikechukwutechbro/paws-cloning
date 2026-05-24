@@ -58,8 +58,9 @@ const TasksTab = () => {
     const [loadingTasks, setLoadingTasks] = useState<Set<string>>(new Set())
     const [adWatchProgress, setAdWatchProgress] = useState<Record<string, number>>({})
     const [adRewardKey, setAdRewardKey] = useState<string | null>(null)
-    const [adCooldown, setAdCooldown] = useState(0)
+    const [adCooldowns, setAdCooldowns] = useState<Record<string, number>>({})
     const [dailyAdCount, setDailyAdCount] = useState(0)
+    const [isOnline, setIsOnline] = useState(true)
     const [balance, setBalance] = useState(50000)
     const [toastMessage, setToastMessage] = useState<string | null>(null)
 
@@ -115,12 +116,32 @@ const TasksTab = () => {
     }, [user?.id])
 
     useEffect(() => {
-        if (adCooldown <= 0) return
+        setIsOnline(navigator.onLine)
+        const handleOnline = () => setIsOnline(true)
+        const handleOffline = () => setIsOnline(false)
+        window.addEventListener('online', handleOnline)
+        window.addEventListener('offline', handleOffline)
+        return () => {
+            window.removeEventListener('online', handleOnline)
+            window.removeEventListener('offline', handleOffline)
+        }
+    }, [])
+
+    useEffect(() => {
+        const entries = Object.entries(adCooldowns).filter(([_, v]) => v > 0)
+        if (entries.length === 0) return
         const interval = setInterval(() => {
-            setAdCooldown(prev => Math.max(0, prev - 1000))
+            setAdCooldowns(prev => {
+                const next = { ...prev }
+                for (const id of Object.keys(next)) {
+                    next[id] = Math.max(0, next[id] - 1000)
+                    if (next[id] <= 0) delete next[id]
+                }
+                return next
+            })
         }, 1000)
         return () => clearInterval(interval)
-    }, [adCooldown])
+    }, [adCooldowns])
 
     const showToast = (message: string) => {
         setToastMessage(message)
@@ -170,6 +191,11 @@ const TasksTab = () => {
             return
         }
 
+        if (!isOnline) {
+            showToast('No internet connection. Come back online to claim.')
+            return
+        }
+
         if (!AD_TASK_IDS.has(taskId) && completedTasks.has(taskId)) {
             showToast('Task already completed!')
             return
@@ -184,9 +210,6 @@ const TasksTab = () => {
         recordTaskAttempt(taskId)
 
         try {
-            const newBalance = balance + reward
-            setBalance(newBalance)
-
             const isAd = AD_TASK_IDS.has(taskId)
 
             if (!isAd) {
@@ -196,11 +219,20 @@ const TasksTab = () => {
                 await updateCompletedTask(user.id, taskId)
             }
 
+            const userRef = doc(db, 'users', user.id)
+            const userSnap = await getDoc(userRef)
+            const currentServerBalance = userSnap.exists() ? (userSnap.data().balance || 50000) : 50000
+            const newBalance = currentServerBalance + reward
+
             await updateUserBalance(user.id, newBalance)
+
+            const freshSnap = await getDoc(userRef)
+            const confirmedBalance = freshSnap.exists() ? (freshSnap.data().balance || 50000) : 50000
+            setBalance(confirmedBalance)
 
             if (isAd) {
                 const cooldown = AD_COOLDOWN_MIN + Math.floor(Math.random() * (AD_COOLDOWN_MAX - AD_COOLDOWN_MIN))
-                setAdCooldown(cooldown)
+                setAdCooldowns(prev => ({ ...prev, [taskId]: cooldown }))
                 const newCount = dailyAdCount + 1
                 setDailyAdCount(newCount)
                 localStorage.setItem(`adDailyCount_${user.id}`, JSON.stringify({
@@ -236,8 +268,12 @@ const TasksTab = () => {
     }
 
     const startAdTask = (taskId: string) => {
-        if (adCooldown > 0) {
-            showToast(`Wait ${Math.ceil(adCooldown / 1000)}s before next ad`)
+        if (!isOnline) {
+            showToast('No internet connection. Go online to watch ads.')
+            return
+        }
+        if (adCooldowns[taskId] > 0) {
+            showToast(`Wait ${Math.ceil(adCooldowns[taskId] / 1000)}s before next ad`)
             return
         }
         if (dailyAdCount >= DAILY_AD_LIMIT) {
@@ -414,16 +450,17 @@ const TasksTab = () => {
         }
 
         if (task.type === 'ad' || task.type === 'listen') {
-            const onCooldown = adCooldown > 0
+            const taskCooldown = adCooldowns[task.id] || 0
+            const onCooldown = taskCooldown > 0
             const atLimit = dailyAdCount >= DAILY_AD_LIMIT
-            const disabled = onCooldown || atLimit
+            const disabled = onCooldown || atLimit || !isOnline
             return (
                 <button 
                     onClick={() => startAdTask(task.id)}
                     disabled={disabled}
                     className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#e0e0e0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {atLimit ? 'Limit Reached' : onCooldown ? `${Math.ceil(adCooldown / 1000)}s` : 'Watch'}
+                    {!isOnline ? 'Offline' : atLimit ? 'Limit Reached' : onCooldown ? `${Math.ceil(taskCooldown / 1000)}s` : 'Watch'}
                 </button>
             )
         }
@@ -464,7 +501,10 @@ const TasksTab = () => {
                         <div className="text-xl text-gray-500">COMPLETING QUESTS</div>
                     </div>
                     <div className="text-right">
-                        <div className="text-sm text-gray-400">Balance</div>
+                        <div className="flex items-center gap-2 justify-end">
+                            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-[#22c55e]' : 'bg-red-500'}`} />
+                            <div className="text-sm text-gray-400">{isOnline ? 'Live' : 'Offline'}</div>
+                        </div>
                         <div className="text-lg font-bold text-white">{balance.toLocaleString()}</div>
                         <div className="text-xs text-gray-500">PAWS</div>
                         <div className="text-[10px] text-gray-600 mt-1">Ads today: {dailyAdCount}/{DAILY_AD_LIMIT}</div>
