@@ -63,7 +63,8 @@ const TasksTab = () => {
     const [balance, setBalance] = useState(50000)
     const [toastMessage, setToastMessage] = useState<string | null>(null)
 
-    const AD_COOLDOWN_MS = 120000
+    const AD_COOLDOWN_MIN = 30000
+    const AD_COOLDOWN_MAX = 40000
     const DAILY_AD_LIMIT = 20
 
     const communities = [
@@ -183,22 +184,31 @@ const TasksTab = () => {
             const newBalance = balance + reward
             setBalance(newBalance)
 
-            const newCompleted = new Set(completedTasks)
-            newCompleted.add(taskId)
-            setCompletedTasks(newCompleted)
+            const isAd = inGameTasks.some(t => t.id === taskId && (t.type === 'ad' || t.type === 'listen'))
+
+            if (!isAd) {
+                const newCompleted = new Set(completedTasks)
+                newCompleted.add(taskId)
+                setCompletedTasks(newCompleted)
+                await updateCompletedTask(user.id, taskId)
+            }
 
             await updateUserBalance(user.id, newBalance)
-            await updateCompletedTask(user.id, taskId)
 
-            const isAd = inGameTasks.some(t => t.id === taskId && (t.type === 'ad' || t.type === 'listen'))
             if (isAd) {
-                setAdCooldown(AD_COOLDOWN_MS)
+                const cooldown = AD_COOLDOWN_MIN + Math.floor(Math.random() * (AD_COOLDOWN_MAX - AD_COOLDOWN_MIN))
+                setAdCooldown(cooldown)
                 const newCount = dailyAdCount + 1
                 setDailyAdCount(newCount)
                 localStorage.setItem(`adDailyCount_${user.id}`, JSON.stringify({
                     date: new Date().toDateString(),
                     count: newCount
                 }))
+                setAdWatchProgress(prev => {
+                    const newProgress = { ...prev }
+                    delete newProgress[taskId]
+                    return newProgress
+                })
             }
 
             showToast(`+${reward.toLocaleString()} PAWS earned!`)
@@ -238,13 +248,6 @@ const TasksTab = () => {
         setAdRewardKey(null)
         setAdWatchProgress(prev => ({ ...prev, [taskId]: 100 }))
         showToast('Ad completed! Tap "Claim" to get your reward.')
-        setTimeout(() => {
-            setAdWatchProgress(prev => {
-                const newProgress = { ...prev }
-                delete newProgress[taskId]
-                return newProgress
-            })
-        }, 2000)
     }
 
     const inGameTasks: Task[] = [
@@ -395,6 +398,18 @@ const TasksTab = () => {
             )
         }
 
+        if (adProgress === 100) {
+            return (
+                <button 
+                    onClick={() => handleTaskReward(task.id, task.reward)}
+                    disabled={isLoading}
+                    className="h-8 bg-[#22c55e] text-white px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#16a34a] transition-colors"
+                >
+                    {isLoading ? '...' : 'Claim'}
+                </button>
+            )
+        }
+
         if (task.type === 'ad' || task.type === 'listen') {
             const onCooldown = adCooldown > 0
             const atLimit = dailyAdCount >= DAILY_AD_LIMIT
@@ -406,18 +421,6 @@ const TasksTab = () => {
                     className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#e0e0e0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {atLimit ? 'Limit Reached' : onCooldown ? `${Math.ceil(adCooldown / 1000)}s` : 'Watch'}
-                </button>
-            )
-        }
-
-        if (adProgress === 100) {
-            return (
-                <button 
-                    onClick={() => handleTaskReward(task.id, task.reward)}
-                    disabled={isLoading}
-                    className="h-8 bg-[#22c55e] text-white px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#16a34a] transition-colors"
-                >
-                    {isLoading ? '...' : 'Claim'}
                 </button>
             )
         }
