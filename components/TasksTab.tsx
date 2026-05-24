@@ -66,6 +66,7 @@ const TasksTab = () => {
     const AD_COOLDOWN_MIN = 30000
     const AD_COOLDOWN_MAX = 40000
     const DAILY_AD_LIMIT = 20
+    const AD_TASK_IDS = new Set(['watch_video_ad', 'watch_image_ad', 'listen_reward'])
 
     const communities = [
         { name: 'X (Twitter)', url: 'https://x.com/GOTPAWSED' },
@@ -78,7 +79,8 @@ const TasksTab = () => {
         if (user) {
             setBalance(user.balance || 50000)
             if (user.completedTasks) {
-                setCompletedTasks(new Set(user.completedTasks))
+                const filtered = user.completedTasks.filter(id => !AD_TASK_IDS.has(id))
+                setCompletedTasks(new Set(filtered))
             }
         }
     }, [user])
@@ -92,7 +94,8 @@ const TasksTab = () => {
                 if (userSnap.exists()) {
                     const data = userSnap.data()
                     if (data.completedTasks) {
-                        setCompletedTasks(new Set(data.completedTasks))
+                        const filtered = data.completedTasks.filter((id: string) => !AD_TASK_IDS.has(id))
+                        setCompletedTasks(new Set(filtered))
                     }
                 }
             } catch (error) {
@@ -167,7 +170,7 @@ const TasksTab = () => {
             return
         }
 
-        if (completedTasks.has(taskId)) {
+        if (!AD_TASK_IDS.has(taskId) && completedTasks.has(taskId)) {
             showToast('Task already completed!')
             return
         }
@@ -184,7 +187,7 @@ const TasksTab = () => {
             const newBalance = balance + reward
             setBalance(newBalance)
 
-            const isAd = inGameTasks.some(t => t.id === taskId && (t.type === 'ad' || t.type === 'listen'))
+            const isAd = AD_TASK_IDS.has(taskId)
 
             if (!isAd) {
                 const newCompleted = new Set(completedTasks)
