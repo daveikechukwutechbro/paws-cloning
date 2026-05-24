@@ -57,10 +57,14 @@ const TasksTab = () => {
     const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set())
     const [loadingTasks, setLoadingTasks] = useState<Set<string>>(new Set())
     const [adWatchProgress, setAdWatchProgress] = useState<Record<string, number>>({})
-    const [isWatchingAd, setIsWatchingAd] = useState<string | null>(null)
     const [adRewardKey, setAdRewardKey] = useState<string | null>(null)
+    const [adCooldown, setAdCooldown] = useState(0)
+    const [dailyAdCount, setDailyAdCount] = useState(0)
     const [balance, setBalance] = useState(50000)
     const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+    const AD_COOLDOWN_MS = 120000
+    const DAILY_AD_LIMIT = 20
 
     const communities = [
         { name: 'X (Twitter)', url: 'https://x.com/GOTPAWSED' },
@@ -96,6 +100,23 @@ const TasksTab = () => {
         }
         loadCompletedTasks()
     }, [user?.id])
+
+    useEffect(() => {
+        const today = new Date().toDateString()
+        const stored = localStorage.getItem(`adDailyCount_${user?.id}`)
+        if (stored) {
+            const { date, count } = JSON.parse(stored)
+            setDailyAdCount(date === today ? count : 0)
+        }
+    }, [user?.id])
+
+    useEffect(() => {
+        if (adCooldown <= 0) return
+        const interval = setInterval(() => {
+            setAdCooldown(prev => Math.max(0, prev - 1000))
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [adCooldown])
 
     const showToast = (message: string) => {
         setToastMessage(message)
@@ -169,6 +190,17 @@ const TasksTab = () => {
             await updateUserBalance(user.id, newBalance)
             await updateCompletedTask(user.id, taskId)
 
+            const isAd = inGameTasks.some(t => t.id === taskId && (t.type === 'ad' || t.type === 'listen'))
+            if (isAd) {
+                setAdCooldown(AD_COOLDOWN_MS)
+                const newCount = dailyAdCount + 1
+                setDailyAdCount(newCount)
+                localStorage.setItem(`adDailyCount_${user.id}`, JSON.stringify({
+                    date: new Date().toDateString(),
+                    count: newCount
+                }))
+            }
+
             showToast(`+${reward.toLocaleString()} PAWS earned!`)
             refreshUser()
         } catch (error) {
@@ -191,12 +223,19 @@ const TasksTab = () => {
     }
 
     const startAdTask = (taskId: string) => {
+        if (adCooldown > 0) {
+            showToast(`Wait ${Math.ceil(adCooldown / 1000)}s before next ad`)
+            return
+        }
+        if (dailyAdCount >= DAILY_AD_LIMIT) {
+            showToast('Daily ad limit reached! Come back tomorrow.')
+            return
+        }
         setAdRewardKey(taskId)
     }
 
     const handleAdComplete = (taskId: string) => {
         setAdRewardKey(null)
-        setIsWatchingAd(null)
         setAdWatchProgress(prev => ({ ...prev, [taskId]: 100 }))
         showToast('Ad completed! Tap "Claim" to get your reward.')
         setTimeout(() => {
@@ -347,7 +386,6 @@ const TasksTab = () => {
         const isCompleted = completedTasks.has(task.id)
         const isLoading = loadingTasks.has(task.id)
         const adProgress = adWatchProgress[task.id]
-        const isWatching = isWatchingAd === task.id
 
         if (isCompleted) {
             return (
@@ -358,12 +396,16 @@ const TasksTab = () => {
         }
 
         if (task.type === 'ad' || task.type === 'listen') {
+            const onCooldown = adCooldown > 0
+            const atLimit = dailyAdCount >= DAILY_AD_LIMIT
+            const disabled = onCooldown || atLimit
             return (
                 <button 
                     onClick={() => startAdTask(task.id)}
-                    className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#e0e0e0] transition-colors"
+                    disabled={disabled}
+                    className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#e0e0e0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Watch
+                    {atLimit ? 'Limit Reached' : onCooldown ? `${Math.ceil(adCooldown / 1000)}s` : 'Watch'}
                 </button>
             )
         }
@@ -419,6 +461,7 @@ const TasksTab = () => {
                         <div className="text-sm text-gray-400">Balance</div>
                         <div className="text-lg font-bold text-white">{balance.toLocaleString()}</div>
                         <div className="text-xs text-gray-500">PAWS</div>
+                        <div className="text-[10px] text-gray-600 mt-1">Ads today: {dailyAdCount}/{DAILY_AD_LIMIT}</div>
                     </div>
                 </div>
             </div>

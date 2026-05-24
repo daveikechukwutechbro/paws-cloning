@@ -9,10 +9,14 @@ const ADSTERRA_ZONES = [ADSTERRA_ZONE_1, ADSTERRA_ZONE_2]
 interface RewardedAdBannerProps {
     onComplete: () => void
     onClose: () => void
-    duration?: number
 }
 
-const RewardedAdBanner = ({ onComplete, onClose, duration = 5000 }: RewardedAdBannerProps) => {
+function randomViewDuration(): number {
+    return 10000 + Math.floor(Math.random() * 6000)
+}
+
+const RewardedAdBanner = ({ onComplete, onClose }: RewardedAdBannerProps) => {
+    const [duration] = useState(randomViewDuration)
     const [progress, setProgress] = useState(0)
     const [adReady, setAdReady] = useState(false)
     const [canClaim, setCanClaim] = useState(false)
