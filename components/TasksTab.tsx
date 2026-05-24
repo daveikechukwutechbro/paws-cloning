@@ -13,6 +13,7 @@ import PawsLogo from '@/icons/PawsLogo'
 import TaskVideo from '@/icons/TaskVideo'
 import TaskImage from '@/icons/TaskImage'
 import TaskSound from '@/icons/TaskSound'
+import RewardedAdBanner from '@/components/RewardedAdBanner'
 
 type Task = {
     id: string
@@ -57,6 +58,7 @@ const TasksTab = () => {
     const [loadingTasks, setLoadingTasks] = useState<Set<string>>(new Set())
     const [adWatchProgress, setAdWatchProgress] = useState<Record<string, number>>({})
     const [isWatchingAd, setIsWatchingAd] = useState<string | null>(null)
+    const [adRewardKey, setAdRewardKey] = useState<string | null>(null)
     const [balance, setBalance] = useState(50000)
     const [toastMessage, setToastMessage] = useState<string | null>(null)
 
@@ -188,34 +190,22 @@ const TasksTab = () => {
         }, 1000)
     }
 
-    const startAdTask = (taskId: string, reward: number) => {
-        setIsWatchingAd(taskId)
-        setAdWatchProgress(prev => ({ ...prev, [taskId]: 0 }))
+    const startAdTask = (taskId: string) => {
+        setAdRewardKey(taskId)
+    }
 
-        const duration = ANTI_FRAUD.minAdWatchTime
-        const steps = 100
-        const stepTime = duration / steps
-
-        let progress = 0
-        const interval = setInterval(() => {
-            progress += 1
-            setAdWatchProgress(prev => ({ ...prev, [taskId]: progress }))
-
-            if (progress >= steps) {
-                clearInterval(interval)
-                setIsWatchingAd(null)
-                setAdWatchProgress(prev => ({ ...prev, [taskId]: 100 }))
-                showToast('Ad completed! Tap "Claim" to get your reward.')
-
-                setTimeout(() => {
-                    setAdWatchProgress(prev => {
-                        const newProgress = { ...prev }
-                        delete newProgress[taskId]
-                        return newProgress
-                    })
-                }, 2000)
-            }
-        }, stepTime)
+    const handleAdComplete = (taskId: string) => {
+        setAdRewardKey(null)
+        setIsWatchingAd(null)
+        setAdWatchProgress(prev => ({ ...prev, [taskId]: 100 }))
+        showToast('Ad completed! Tap "Claim" to get your reward.')
+        setTimeout(() => {
+            setAdWatchProgress(prev => {
+                const newProgress = { ...prev }
+                delete newProgress[taskId]
+                return newProgress
+            })
+        }, 2000)
     }
 
     const inGameTasks: Task[] = [
@@ -368,21 +358,9 @@ const TasksTab = () => {
         }
 
         if (task.type === 'ad' || task.type === 'listen') {
-            if (isWatching) {
-                return (
-                    <div className="h-8 px-4 rounded-full text-sm font-medium flex items-center bg-[#007aff]">
-                        <div className="w-20 h-2 bg-[#333] rounded-full overflow-hidden">
-                            <div 
-                                className="h-full bg-white transition-all duration-100"
-                                style={{ width: `${adProgress}%` }}
-                            />
-                        </div>
-                    </div>
-                )
-            }
             return (
                 <button 
-                    onClick={() => startAdTask(task.id, task.reward)}
+                    onClick={() => startAdTask(task.id)}
                     className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#e0e0e0] transition-colors"
                 >
                     Watch
@@ -514,6 +492,13 @@ const TasksTab = () => {
                     <span>Anti-fraud protection active. Suspicious activity will result in reward confiscation.</span>
                 </div>
             </div>
+
+            {adRewardKey && (
+                <RewardedAdBanner
+                    onComplete={() => handleAdComplete(adRewardKey)}
+                    onClose={() => setAdRewardKey(null)}
+                />
+            )}
         </div>
     )
 }
