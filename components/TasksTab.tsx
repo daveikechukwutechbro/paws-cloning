@@ -440,7 +440,7 @@ const TasksTab = () => {
         },
         {
             id: 'partner_phantom',
-            icon: 'https://phantom.com/favicon.ico',
+            icon: 'https://logowik.com/content/uploads/images/phantom3506.jpg',
             title: 'Get Phantom Wallet',
             description: 'Store PAWS in Phantom wallet',
             reward: 100000,
@@ -458,7 +458,7 @@ const TasksTab = () => {
         },
         {
             id: 'partner_bitmart',
-            icon: 'https://www.bitmart.com/favicon.ico',
+            icon: 'https://altcoinsbox.com/wp-content/uploads/2023/03/bitmart-logo.png',
             title: 'Visit BitMart',
             description: 'Trade PAWS on BitMart exchange',
             reward: 100000,
@@ -467,7 +467,7 @@ const TasksTab = () => {
         },
         {
             id: 'partner_mexc',
-            icon: 'https://www.mexc.com/favicon.ico',
+            icon: 'https://altcoinsbox.com/wp-content/uploads/2023/01/mexc-logo.png',
             title: 'Visit MEXC',
             description: 'Trade PAWS on MEXC exchange',
             reward: 100000,
