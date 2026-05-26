@@ -420,6 +420,8 @@ const TasksTab = () => {
         const isCompleted = completedTasks.has(task.id)
         const isLoading = loadingTasks.has(task.id)
         const adProgress = adWatchProgress[task.id]
+        const taskCount = dailyAdCounts[task.id] || 0
+        const remaining = MAX_PER_TASK - taskCount
 
         if (isCompleted) {
             return (
@@ -443,9 +445,8 @@ const TasksTab = () => {
 
         if (task.type === 'ad' || task.type === 'listen') {
             const taskCooldown = adCooldowns[task.id] || 0
-            const taskCount = dailyAdCounts[task.id] || 0
             const onCooldown = taskCooldown > 0
-            const atLimit = taskCount >= MAX_PER_TASK
+            const atLimit = remaining <= 0
             const disabled = onCooldown || atLimit || !isOnline
             return (
                 <button 
@@ -453,7 +454,7 @@ const TasksTab = () => {
                     disabled={disabled}
                     className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#e0e0e0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {!isOnline ? 'Offline' : atLimit ? 'Done' : onCooldown ? `${Math.ceil(taskCooldown / 1000)}s` : `Watch (${MAX_PER_TASK - taskCount})`}
+                    {!isOnline ? 'Offline' : atLimit ? 'Done' : onCooldown ? `${Math.ceil(taskCooldown / 1000)}s` : 'Start'}
                 </button>
             )
         }
@@ -557,7 +558,13 @@ const TasksTab = () => {
                                 <div className="text-[17px]">{task.title}</div>
                                 <div className="text-gray-400 text-[14px]">+ {task.reward.toLocaleString()} PAWS</div>
                                 {task.description && (
-                                    <div className="text-gray-500 text-[12px]">{task.description}</div>
+                                    <div className="text-gray-500 text-[12px]">
+                                        {task.description}
+                                        {(task.type === 'ad' || task.type === 'listen') && (() => {
+                                            const r = MAX_PER_TASK - (dailyAdCounts[task.id] || 0)
+                                            return r > 0 ? <span className="ml-1 text-[#868686]">· {r}/{MAX_PER_TASK} left today</span> : null
+                                        })()}
+                                    </div>
                                 )}
                             </div>
                             {renderTaskButton(task)}
