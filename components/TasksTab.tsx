@@ -63,6 +63,7 @@ const TasksTab = () => {
     const [isOnline, setIsOnline] = useState(true)
     const [balance, setBalance] = useState(50000)
     const [toastMessage, setToastMessage] = useState<string | null>(null)
+    const [pendingRedirect, setPendingRedirect] = useState<{ id: string; reward: number } | null>(null)
 
     const AD_COOLDOWN_MIN = 30000
     const AD_COOLDOWN_MAX = 40000
@@ -126,6 +127,18 @@ const TasksTab = () => {
             window.removeEventListener('offline', handleOffline)
         }
     }, [])
+
+    useEffect(() => {
+        if (!pendingRedirect) return
+        const handleReturn = () => {
+            if (document.visibilityState === 'visible' && pendingRedirect) {
+                handleTaskReward(pendingRedirect.id, pendingRedirect.reward)
+                setPendingRedirect(null)
+            }
+        }
+        document.addEventListener('visibilitychange', handleReturn)
+        return () => document.removeEventListener('visibilitychange', handleReturn)
+    }, [pendingRedirect])
 
     useEffect(() => {
         const entries = Object.entries(adCooldowns).filter(([_, v]) => v > 0)
@@ -261,8 +274,15 @@ const TasksTab = () => {
     }
 
     const startLinkTask = (taskId: string, link: string, reward: number) => {
-        window.open(link, '_blank')
-        handleTaskReward(taskId, reward)
+        if (pendingRedirect) return
+        const tg = (window as any).Telegram?.WebApp
+        if (tg?.openLink) {
+            tg.openLink(link)
+        } else {
+            window.open(link, '_blank')
+        }
+        setPendingRedirect({ id: taskId, reward })
+        showToast('Come back after following to get your reward!')
     }
 
     const startAdTask = (taskId: string) => {
