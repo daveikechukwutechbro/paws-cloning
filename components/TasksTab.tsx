@@ -260,14 +260,7 @@ const TasksTab = () => {
         }
     }
 
-    const startSocialTask = (link: string) => {
-        window.open(link, '_blank')
-        setTimeout(() => {
-            showToast('Come back and tap "Claim" to get your reward!')
-        }, 1000)
-    }
-
-    const startPartnerTask = (taskId: string, link: string, reward: number) => {
+    const startLinkTask = (taskId: string, link: string, reward: number) => {
         window.open(link, '_blank')
         handleTaskReward(taskId, reward)
     }
@@ -318,14 +311,6 @@ const TasksTab = () => {
             description: 'Listen and claim your reward',
             reward: 5000,
             type: 'listen',
-        },
-        {
-            id: 'put_paw_name',
-            icon: taskWhitePaws.src,
-            title: 'Put 🐾 in your name',
-            description: 'Update your Telegram name with 🐾',
-            reward: 5000,
-            type: 'social',
         },
         {
             id: 'connect_wallet',
@@ -532,11 +517,7 @@ const TasksTab = () => {
             <button 
                 onClick={() => {
                     if (task.link) {
-                        if (isPartner) {
-                            startPartnerTask(task.id, task.link, task.reward)
-                        } else {
-                            startSocialTask(task.link)
-                        }
+                        startLinkTask(task.id, task.link, task.reward)
                     }
                 }}
                 disabled={isLoading}
