@@ -40,7 +40,7 @@ const AirdropEligibility = () => {
         return () => clearInterval(interval)
     }, [])
 
-    useEffect(() => {
+    const computeStatus = () => {
         const timerKey = user?.id ? `lastClaim_${user.id}` : 'lastClaim_default'
         const savedLastClaim = localStorage.getItem(timerKey)
 
@@ -52,16 +52,16 @@ const AirdropEligibility = () => {
         }
 
         const lastTx = localStorage.getItem('last_ton_transaction')
-
-        setStatus(checkAirdropEligibility(miningSessions, lastTx))
-    }, [user])
-
-    const handleConnectForAirdrop = () => {
-        const tg = (window as any).Telegram?.WebApp
-        if (tg?.openLink) {
-            tg.openLink('https://t.me/Pawscloudminebot?start=airdrop_check')
-        }
+        return checkAirdropEligibility(miningSessions, lastTx)
     }
+
+    useEffect(() => {
+        setStatus(computeStatus())
+        const interval = setInterval(() => {
+            setStatus(computeStatus())
+        }, 5000)
+        return () => clearInterval(interval)
+    }, [user])
 
     const miningRemaining = status.miningSessionsRemaining
     const txRemaining = status.txCompleted ? 0 : 1
@@ -153,16 +153,14 @@ const AirdropEligibility = () => {
 
                 {status.isEligible ? (
                     <div className="bg-[#22c55e]/20 border border-[#22c55e]/30 rounded-lg p-3 text-center">
-                        <div className="text-sm font-bold text-[#22c55e]">✓ You&apos;re Eligible!</div>
-                        <div className="text-xs text-gray-400 mt-0.5">Airdrop will be distributed after TGE 2</div>
+                        <div className="text-sm font-bold text-[#22c55e]">✓ Completed</div>
+                        <div className="text-xs text-gray-400 mt-0.5">You&apos;re eligible! Airdrop will be distributed after TGE 2</div>
                     </div>
                 ) : (
-                    <button
-                        onClick={handleConnectForAirdrop}
-                        className="w-full bg-gradient-to-r from-[#4c9ce2] to-[#007aff] text-white text-sm font-bold py-2.5 rounded-lg"
-                    >
-                        Complete Requirements
-                    </button>
+                    <div className="bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg p-3 text-center">
+                        <div className="text-sm font-bold text-[#f59e0b]">Requirements Not Met</div>
+                        <div className="text-xs text-gray-400 mt-0.5">Complete the requirements above to qualify</div>
+                    </div>
                 )}
             </div>
         </div>

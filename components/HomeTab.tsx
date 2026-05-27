@@ -185,6 +185,7 @@ const HomeTab = () => {
         try {
             const result = await processPreSalePurchase(user.id, packageId, amount, presaleTxHash)
             if (result.success) {
+                localStorage.setItem('last_ton_transaction', presaleTxHash)
                 setPresaleSuccess(true)
                 setTimeout(() => {
                     setPresaleSuccess(false)

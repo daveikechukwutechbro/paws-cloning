@@ -267,6 +267,11 @@ const TasksTab = () => {
         }, 1000)
     }
 
+    const startPartnerTask = (taskId: string, link: string, reward: number) => {
+        window.open(link, '_blank')
+        handleTaskReward(taskId, reward)
+    }
+
     const startAdTask = (taskId: string) => {
         if (!isOnline) {
             showToast('No internet connection. Go online to watch ads.')
@@ -522,17 +527,22 @@ const TasksTab = () => {
             )
         }
 
+        const isPartner = task.id.startsWith('partner_')
         return (
             <button 
                 onClick={() => {
                     if (task.link) {
-                        startSocialTask(task.link)
+                        if (isPartner) {
+                            startPartnerTask(task.id, task.link, task.reward)
+                        } else {
+                            startSocialTask(task.link)
+                        }
                     }
                 }}
                 disabled={isLoading}
                 className="h-8 bg-white text-black px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#e0e0e0] transition-colors disabled:opacity-50"
             >
-                {isLoading ? '...' : 'Start'}
+                {isLoading ? '...' : isPartner ? 'Visit' : 'Start'}
             </button>
         )
     }
