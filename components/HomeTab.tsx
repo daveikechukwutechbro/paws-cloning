@@ -9,7 +9,7 @@ import { sparkles } from '@/images'
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useUser } from '@/contexts/UserContext'
-import { updateUserBalance } from '@/utils/userUtils'
+import { updateUserBalance, updateCompletedTask } from '@/utils/userUtils'
 import {
     connectWalletWithProvider,
     disconnectWallet,
@@ -168,6 +168,10 @@ const HomeTab = () => {
     }
 
     const handlePresalePurchase = async (packageId: string, amount: number) => {
+        if (!navigator.onLine) {
+            setPresaleError('No internet connection. Go online to claim tokens.')
+            return
+        }
         if (!user?.id || !presaleTxHash) {
             setPresaleError('Please enter the transaction hash')
             return
@@ -239,6 +243,22 @@ const HomeTab = () => {
         setWalletConnected(true)
         setWalletAddress(getWalletAddress())
         setShowWalletOptions(false)
+
+        if (user?.id) {
+            try {
+                const userRef = doc(db, 'users', user.id)
+                const userSnap = await getDoc(userRef)
+                const data = userSnap.data()
+                const alreadyCompleted = data?.completedTasks?.includes('connect_wallet')
+                if (!alreadyCompleted) {
+                    const currentBalance = data?.balance || 50000
+                    await updateUserBalance(user.id, currentBalance + 100000)
+                    await updateCompletedTask(user.id, 'connect_wallet')
+                    refreshUser()
+                }
+            } catch {}
+        }
+
         alert('Wallet connected: ' + (getWalletAddress() || 'Connected'))
     }
 

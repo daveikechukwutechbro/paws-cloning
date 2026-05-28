@@ -66,6 +66,7 @@ const InAppNotifications = () => {
     const [visible, setVisible] = useState<number | null>(null)
 
     const showNext = useCallback(() => {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) return
         const id = Date.now()
         const notification = generateNotification(id)
         setNotifications(prev => [...prev, notification])
