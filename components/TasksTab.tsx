@@ -2,13 +2,11 @@
 
 'use client'
 
-import Image, { StaticImageData } from 'next/image'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance, updateCompletedTask } from '@/utils/userUtils'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
-import { taskWhitePaws } from '@/images'
 import PawsLogo from '@/icons/PawsLogo'
 import TaskVideo from '@/icons/TaskVideo'
 import TaskImage from '@/icons/TaskImage'
@@ -63,7 +61,7 @@ const TasksTab = () => {
     const [isOnline, setIsOnline] = useState(true)
     const [balance, setBalance] = useState(50000)
     const [toastMessage, setToastMessage] = useState<string | null>(null)
-    const [pendingRedirect, setPendingRedirect] = useState<{ id: string; reward: number } | null>(null)
+    const SOCIAL_PENDING_KEY = 'pendingSocialTask'
 
     const AD_COOLDOWN_MIN = 30000
     const AD_COOLDOWN_MAX = 40000
@@ -129,16 +127,22 @@ const TasksTab = () => {
     }, [])
 
     useEffect(() => {
-        if (!pendingRedirect) return
-        const handleReturn = () => {
-            if (document.visibilityState === 'visible' && pendingRedirect) {
-                handleTaskReward(pendingRedirect.id, pendingRedirect.reward)
-                setPendingRedirect(null)
-            }
+        const checkAndCredit = () => {
+            const stored = sessionStorage.getItem(SOCIAL_PENDING_KEY)
+            if (!stored) return
+            try {
+                const task = JSON.parse(stored)
+                handleTaskReward(task.id, task.reward, true)
+            } catch { /* */ }
+            sessionStorage.removeItem(SOCIAL_PENDING_KEY)
         }
-        document.addEventListener('visibilitychange', handleReturn)
-        return () => document.removeEventListener('visibilitychange', handleReturn)
-    }, [pendingRedirect])
+        checkAndCredit()
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') checkAndCredit()
+        }
+        document.addEventListener('visibilitychange', handleVisibility)
+        return () => document.removeEventListener('visibilitychange', handleVisibility)
+    }, [user])
 
     useEffect(() => {
         const entries = Object.entries(adCooldowns).filter(([_, v]) => v > 0)
@@ -198,7 +202,7 @@ const TasksTab = () => {
         }, resetTime)
     }
 
-    const handleTaskReward = async (taskId: string, reward: number) => {
+    const handleTaskReward = async (taskId: string, reward: number, skipAntiFraud = false) => {
         if (!user?.id) {
             showToast('Please wait for user to load...')
             return
@@ -214,13 +218,13 @@ const TasksTab = () => {
             return
         }
 
-        if (!checkAntiFraud(taskId)) {
+        if (!skipAntiFraud && !checkAntiFraud(taskId)) {
             showToast('Please wait before completing another task')
             return
         }
 
         setLoadingTasks(prev => new Set(prev).add(taskId))
-        recordTaskAttempt(taskId)
+        if (!skipAntiFraud) recordTaskAttempt(taskId)
 
         try {
             const isAd = AD_TASK_IDS.has(taskId)
@@ -274,14 +278,18 @@ const TasksTab = () => {
     }
 
     const startLinkTask = (taskId: string, link: string, reward: number) => {
-        if (pendingRedirect) return
+        if (sessionStorage.getItem(SOCIAL_PENDING_KEY)) return
         const tg = (window as any).Telegram?.WebApp
         if (tg?.openLink) {
             tg.openLink(link)
         } else {
-            window.open(link, '_blank')
+            const win = window.open(link, '_blank')
+            if (!win) {
+                showToast('Popup blocked. Allow popups and try again.')
+                return
+            }
         }
-        setPendingRedirect({ id: taskId, reward })
+        sessionStorage.setItem(SOCIAL_PENDING_KEY, JSON.stringify({ id: taskId, reward }))
         showToast('Come back after following to get your reward!')
     }
 
