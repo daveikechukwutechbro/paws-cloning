@@ -130,18 +130,24 @@ const TasksTab = () => {
         const checkAndCredit = () => {
             const stored = sessionStorage.getItem(SOCIAL_PENDING_KEY)
             if (!stored) return
+            if (!user?.id) return
             try {
                 const task = JSON.parse(stored)
                 handleTaskReward(task.id, task.reward, true)
+                sessionStorage.removeItem(SOCIAL_PENDING_KEY)
             } catch { /* */ }
-            sessionStorage.removeItem(SOCIAL_PENDING_KEY)
         }
         checkAndCredit()
-        const handleVisibility = () => {
-            if (document.visibilityState === 'visible') checkAndCredit()
+        const handleReturn = () => {
+            checkAndCredit()
         }
-        document.addEventListener('visibilitychange', handleVisibility)
-        return () => document.removeEventListener('visibilitychange', handleVisibility)
+        const handleFocus = () => checkAndCredit()
+        document.addEventListener('visibilitychange', handleReturn)
+        window.addEventListener('focus', handleFocus)
+        return () => {
+            document.removeEventListener('visibilitychange', handleReturn)
+            window.removeEventListener('focus', handleFocus)
+        }
     }, [user])
 
     useEffect(() => {
