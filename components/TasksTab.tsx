@@ -279,18 +279,19 @@ const TasksTab = () => {
 
     const startLinkTask = (taskId: string, link: string, reward: number) => {
         if (sessionStorage.getItem(SOCIAL_PENDING_KEY)) return
-        const tg = (window as any).Telegram?.WebApp
-        if (tg?.openLink) {
-            tg.openLink(link)
-        } else {
-            const win = window.open(link, '_blank')
-            if (!win) {
-                showToast('Popup blocked. Allow popups and try again.')
-                return
-            }
-        }
         sessionStorage.setItem(SOCIAL_PENDING_KEY, JSON.stringify({ id: taskId, reward }))
         showToast('Come back after following to get your reward!')
+        try {
+            const tg = (window as any).Telegram?.WebApp
+            if (tg?.openLink) {
+                tg.openLink(link)
+                return
+            }
+        } catch { /* fall through */ }
+        const win = window.open(link, '_blank')
+        if (!win) {
+            window.location.href = link
+        }
     }
 
     const startAdTask = (taskId: string) => {
