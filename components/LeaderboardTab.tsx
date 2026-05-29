@@ -141,12 +141,12 @@ const baseBalances = [
     812_222_565, 782_111_453, 767_654_998, 743_675_633,
     // Whale tier (7): Slightly lower than Elite minimum, trending downward
     680_000_000, 620_000_000, 550_000_000, 480_000_000, 410_000_000, 350_000_000, 290_000_000,
-    // Influencer tier (10): 1M-240M
-    200_000_000, 170_000_000, 140_000_000, 110_000_000, 85_000_000, 65_000_000, 48_000_000, 32_000_000, 18_000_000, 10_000_000,
+    // Influencer tier (9): 1M-240M
+    200_000_000, 170_000_000, 140_000_000, 110_000_000, 85_000_000, 65_000_000, 48_000_000, 32_000_000, 18_000_000,
     // Trusted tier (10): 500K-10M
     8_900_000, 7_800_000, 6_700_000, 5_800_000, 5_200_000, 4_500_000, 3_800_000, 3_100_000, 2_500_000, 2_000_000,
-    // Active tier (8): 100K-2M
-    1_500_000, 1_200_000, 950_000, 750_000, 550_000, 350_000, 200_000, 100_000,
+    // Active tier (6): 100K-2M
+    1_500_000, 1_200_000, 950_000, 750_000, 550_000, 350_000,
     // Newcomer tier (8): 0-100K
     95_000, 87_000, 78_000, 68_000, 55_000, 42_000, 28_000, 12_000,
 ]
@@ -207,26 +207,22 @@ function getUsernameForTier(tierLabel: string, indexInTier: number, timeWindows:
     const pool = namePools[tierLabel]
     if (!pool) return 'Unknown'
 
-    // Elite & Legend: use deterministic real names from pools
-    if (tierLabel === 'Elite' || tierLabel === 'Legend') {
-        const windowKey = Math.floor(Date.now() / 1000 / 86400)
-        const shuffledPool = seededShuffle(pool, windowKey)
+    // Whale, Elite & Legend: static names (only change when user reaches threshold)
+    if (tierLabel === 'Whale' || tierLabel === 'Elite' || tierLabel === 'Legend') {
+        const shuffledPool = seededShuffle(pool, 0)
         return shuffledPool[indexInTier % shuffledPool.length]
     }
 
-    // Lower tiers: rotate names continuously using real time
-    // The window changes at different rates per tier, creating organic feel
+    // Lower tiers: rotate names at set intervals
     const tierIntervals: Record<string, number> = {
-        'Newcomer': 6,     // Every 6 seconds
-        'Active': 12,      // Every 12 seconds
-        'Trusted': 30,     // Every 30 seconds
-        'Influencer': 60,  // Every 60 seconds
-        'Whale': 300,      // Every 5 minutes
+        'Newcomer': 6,         // Every 6 seconds
+        'Active': 1800,        // Every 30 minutes
+        'Trusted': 3600,       // Every 1 hour
+        'Influencer': 172800,  // Every 2 days
     }
 
     const interval = tierIntervals[tierLabel] || 3
     const windowKey = Math.floor(Date.now() / 1000 / interval)
-    // Use indexInTier + windowKey to get different name per position
     const shuffledPool = seededShuffle(pool, windowKey)
     return shuffledPool[indexInTier % shuffledPool.length]
 }
@@ -248,12 +244,9 @@ const LeaderboardTab = () => {
         const updateWindows = () => {
             setTimeWindows({
                 Newcomer: getTimeWindow(6),
-                Active: getTimeWindow(12),
-                Trusted: getTimeWindow(30),
-                Influencer: getTimeWindow(60),
-                Whale: getTimeWindow(300),
-                Elite: getTimeWindow(86400),
-                Legend: getTimeWindow(86400),
+                Active: getTimeWindow(1800),
+                Trusted: getTimeWindow(3600),
+                Influencer: getTimeWindow(172800),
             })
         }
         updateWindows()
@@ -290,15 +283,33 @@ const LeaderboardTab = () => {
 
         if (tier.label === 'Newcomer') {
             adjustedBalance = balance
-        } else if (tier.label === 'Active' || tier.label === 'Trusted' || tier.label === 'Influencer') {
-            const now = Date.now() / 1000 / 60
-            const tierSpeed = tier.label === 'Active' ? 0.3 : tier.label === 'Trusted' ? 0.25 : 0.2
-            const timeFactor = now * tierSpeed + index * 3.14159
-            const wave1 = Math.sin(timeFactor * 0.3) * 0.015
-            const wave2 = Math.sin(timeFactor * 0.7 + index) * 0.01
-            const wave3 = Math.sin(timeFactor * 1.5 + index * 0.7) * 0.008
-            const fluctuation = wave1 + wave2 + wave3
-            adjustedBalance = Math.floor(balance * (1 + fluctuation))
+        } else if (tier.label === 'Influencer') {
+            // Influencers: total ~87M/wk (15B/2mo across all tiers)
+            const weeklyAdd = 15_000_000 - indexInTier * 1_400_000
+            const totalGrowth = weeklyAdd * (weeksSinceEpoch + weekProgress)
+            adjustedBalance = Math.floor(balance + totalGrowth)
+            if (leaderboardData.length > 0) {
+                const personAbove = leaderboardData[leaderboardData.length - 1]
+                if (adjustedBalance >= personAbove.balance) {
+                    adjustedBalance = Math.floor(personAbove.balance * 0.95)
+                }
+            }
+        } else if (tier.label === 'Trusted') {
+            // Trusted: total ~22M/wk
+            const weeklyAdd = 4_000_000 - indexInTier * 400_000
+            const totalGrowth = weeklyAdd * (weeksSinceEpoch + weekProgress)
+            adjustedBalance = Math.floor(balance + totalGrowth)
+            if (leaderboardData.length > 0) {
+                const personAbove = leaderboardData[leaderboardData.length - 1]
+                if (adjustedBalance >= personAbove.balance) {
+                    adjustedBalance = Math.floor(personAbove.balance * 0.95)
+                }
+            }
+        } else if (tier.label === 'Active') {
+            // Active: total ~4.4M/wk
+            const weeklyAdd = 900_000 - indexInTier * 100_000
+            const totalGrowth = weeklyAdd * (weeksSinceEpoch + weekProgress)
+            adjustedBalance = Math.floor(balance + totalGrowth)
             if (leaderboardData.length > 0) {
                 const personAbove = leaderboardData[leaderboardData.length - 1]
                 if (adjustedBalance >= personAbove.balance) {
@@ -306,8 +317,8 @@ const LeaderboardTab = () => {
                 }
             }
         } else if (tier.label === 'Whale') {
-            // Whales earn 100-300M PAWS per week, growing over the week
-            const weeklyAdd = 100_000_000 + ((index * 37 + 13) % 201) * 1_000_000
+            // Whale: total ~437.5M/wk
+            const weeklyAdd = 100_000_000 - indexInTier * 12_500_000
             const totalGrowth = weeklyAdd * (weeksSinceEpoch + weekProgress)
             adjustedBalance = Math.floor(balance + totalGrowth)
             if (leaderboardData.length > 0) {
@@ -317,8 +328,8 @@ const LeaderboardTab = () => {
                 }
             }
         } else if (tier.label === 'Elite') {
-            // Elite earn 400-500M PAWS per week
-            const weeklyAdd = 400_000_000 + ((index * 53 + 7) % 101) * 1_000_000
+            // Elite: total ~580M/wk
+            const weeklyAdd = 175_000_000 - indexInTier * 20_000_000
             const totalGrowth = weeklyAdd * (weeksSinceEpoch + weekProgress)
             adjustedBalance = Math.floor(balance + totalGrowth)
             if (leaderboardData.length > 0) {
@@ -328,14 +339,14 @@ const LeaderboardTab = () => {
                 }
             }
         } else if (tier.label === 'Legend') {
-            // Legends earn 500-600M PAWS per week
-            const weeklyAdd = 500_000_000 + ((index * 71 + 3) % 101) * 1_000_000
+            // Legend: total ~630M/wk
+            const weeklyAdd = 240_000_000 - indexInTier * 30_000_000
             const totalGrowth = weeklyAdd * (weeksSinceEpoch + weekProgress)
             adjustedBalance = Math.floor(balance + totalGrowth)
             if (leaderboardData.length > 0) {
                 const personAbove = leaderboardData[leaderboardData.length - 1]
-                if (adjustedBalance <= personAbove.balance) {
-                    adjustedBalance = Math.floor(personAbove.balance * 1.05)
+                if (adjustedBalance >= personAbove.balance) {
+                    adjustedBalance = Math.floor(personAbove.balance * 0.90)
                 }
             }
         }
