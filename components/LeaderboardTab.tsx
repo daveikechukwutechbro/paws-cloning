@@ -1,7 +1,6 @@
 'use client'
 
 import PawsLogo from '@/icons/PawsLogo'
-import TierIcon from '@/icons/TierIcons'
 import { trophy } from '@/images/'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
@@ -152,11 +151,14 @@ const baseBalances = [
     95_000, 87_000, 78_000, 68_000, 55_000, 42_000, 28_000, 12_000,
 ]
 
-// Medal mapping - only top 3 get medals, others show rank number
-const getMedal = (place: number) => {
+// Medal mapping - show tier badges
+const getMedal = (place: number, tierLabel: string) => {
     if (place === 1) return { emoji: '👑', bg: 'from-[#ffd700] to-[#b8860b]' }
     if (place === 2) return { emoji: '🥈', bg: 'from-[#c0c0c0] to-[#808080]' }
     if (place === 3) return { emoji: '🥉', bg: 'from-[#cd7f32] to-[#8b4513]' }
+    if (tierLabel === 'Legend') return { emoji: '👑', bg: 'from-[#ffd700] to-[#ffaa00]' }
+    if (tierLabel === 'Elite') return { emoji: '🔮', bg: 'from-[#8b5cf6] to-[#a78bfa]' }
+    if (tierLabel === 'Whale') return { emoji: '🐋', bg: 'from-[#a855f7] to-[#c084fc]' }
     return null
 }
 
@@ -353,12 +355,13 @@ const LeaderboardTab = () => {
             username,
             balance: adjustedBalance,
             place: index + 1,
-            medal: getMedal(index + 1),
+            medal: getMedal(index + 1, tier.label),
             tierLabel: tier.label,
         })
     })
 
     const getTierColor = (balance: number) => getUserTier(balance).color
+    const getTierIcon = (balance: number) => getUserTier(balance).icon
 
     return (
         <div className={`leaderboard-tab-con transition-all duration-300`}>
@@ -402,7 +405,7 @@ const LeaderboardTab = () => {
                                     color: currentTier.color,
                                     backgroundColor: `${currentTier.color}20`,
                                 }}>
-                                    <TierIcon tier={currentTier.label} size={12} /> {currentTier.label}
+                                    {getTierIcon(user?.balance || 0)} {currentTier.label}
                                 </div>
                             </div>
                         </div>
@@ -468,7 +471,7 @@ const LeaderboardTab = () => {
                                             backgroundColor: `${tierColor}18`,
                                             border: `1px solid ${tierColor}30`
                                         }}>
-                                            <TierIcon tier={item.tierLabel} size={12} /> {item.tierLabel}
+                                            {getTierIcon(item.balance)} {item.tierLabel}
                                         </div>
                                     </div>
                                 </div>

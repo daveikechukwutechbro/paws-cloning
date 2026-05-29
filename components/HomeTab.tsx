@@ -2,7 +2,6 @@
 
 import Wallet from '@/icons/Wallet'
 import PawsLogo from '@/icons/PawsLogo'
-import TierIcon from '@/icons/TierIcons'
 import Community from '@/icons/Community'
 import Star from '@/icons/Star'
 import ArrowRight from '@/icons/ArrowRight'
@@ -649,9 +648,7 @@ const HomeTab = () => {
                             </div>
 
                             <div className="text-center mb-6">
-                                <div className="mb-2">
-                                    <TierIcon tier={currentTier.label} size={38} />
-                                </div>
+                                <div className="text-5xl mb-2">{currentTier.icon}</div>
                                 <div className="text-2xl font-bold" style={{ color: currentTier.color }}>{currentTier.label}</div>
                                 <div className="text-sm text-[#868686] mt-1">Rank {estimatedRank} · {displayBalance.toLocaleString()} PAWS</div>
                             </div>
@@ -698,9 +695,7 @@ const HomeTab = () => {
                                             }}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div>
-                                                    <TierIcon tier={tier.label} size={22} />
-                                                </div>
+                                                <div className="text-xl">{tier.icon}</div>
                                                 <div>
                                                     <div className="text-sm font-semibold" style={{ color: isUnlocked ? tier.color : '#555' }}>{tier.label}</div>
                                                 </div>
