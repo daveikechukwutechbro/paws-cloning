@@ -366,54 +366,63 @@ const LeaderboardTab = () => {
     return (
         <div className={`leaderboard-tab-con transition-all duration-300`}>
             <div className="px-4">
+                {/* Header */}
                 <div className="flex flex-col items-center mt-4">
-                    <Image src={trophy} alt="Trophy" width={80} height={80} className="mb-2" />
-                    <h1 className="text-2xl font-bold mb-2">Leaderboard</h1>
-                    <div className="w-full mt-2 px-4 py-2 flex justify-between rounded-lg text-sm font-medium text-[#fefefe] bg-[#151516] border border-[#2d2d2e]">
-                        <span>Total Users</span>
-                        <span>{formatUserCount(currentUsers)} / {totalUserTarget.toLocaleString()}</span>
+                    <Image src={trophy} alt="Trophy" width={72} height={72} className="mb-2" />
+                    <h1 className="text-xl font-bold text-[#fefefe] mb-3">Leaderboard</h1>
+                    <div className="w-full px-4 py-3 rounded-xl bg-[#151516] border border-[#2d2d2e]">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-[#868686]">Total Users</span>
+                            <span className="text-sm font-semibold text-[#fefefe]">{formatUserCount(currentUsers)} / {totalUserTarget.toLocaleString()}</span>
+                        </div>
+                        <div className="w-full rounded-full h-2 bg-[#2d2d2e] overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-[#4c9ce2] to-[#22c55e] transition-all duration-700" style={{ width: `${totalUserProgress}%` }} />
+                        </div>
+                        <div className="mt-1 text-[11px] text-[#868686] text-right">{totalUserProgress}% of target</div>
                     </div>
-                    <div className="w-full mt-2 rounded-full h-2 bg-[#ffffff0d] overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-[#4c9ce2] to-[#22c55e] transition-all duration-700" style={{ width: `${totalUserProgress}%` }} />
-                    </div>
-                    <div className="w-full mt-1 text-[11px] text-[#868686] text-right">{totalUserProgress}% of target</div>
                 </div>
 
                 {/* User Card - Only visible for Whale, Elite, and Legend */}
                 {currentTier && (currentTier.label === 'Whale' || currentTier.label === 'Elite' || currentTier.label === 'Legend') && (
-                    <div className="rounded-2xl p-4 mt-4 border-2" style={{
-                        backgroundColor: currentTier ? currentTier.bgColor : '#151516',
-                        borderColor: currentTier ? currentTier.color : '#2d2d2e'
+                    <div className="rounded-xl p-4 mt-4 bg-[#151516] border" style={{
+                        borderColor: currentTier.color || '#2d2d2e'
                     }}>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
-                                <div className="w-11 h-11 p-1.5 rounded-lg" style={{ backgroundColor: '#0f172a' }}>
+                                <div className="w-11 h-11 p-2 rounded-xl bg-[#1f1f20]">
                                     <PawsLogo className="w-full h-full" />
                                 </div>
                                 <div>
-                                    <div className="text-base font-semibold text-[#fefefe]">{loading ? 'Loading...' : (user?.username || 'You')}</div>
-                                    <div className="text-xs" style={{ color: currentTier?.color || '#868686' }}>
-                                        {loading ? '--' : (user?.balance || 50000).toLocaleString()} PAWS · {currentTier?.label || 'Newcomer'}
+                                    <div className="text-sm font-semibold text-[#fefefe]">{loading ? 'Loading...' : (user?.username || 'You')}</div>
+                                    <div className="text-xs" style={{ color: currentTier.color || '#868686' }}>
+                                        {(user?.balance || 50000).toLocaleString()} PAWS
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-right">
+                            <div className="flex flex-col items-end gap-1">
                                 <div className="text-lg font-bold text-[#fefefe]">{userRank}</div>
-                                <div className="text-[10px] text-[#868686]">Target {totalUserTarget.toLocaleString()} • {totalUserProgress}% reached</div>
+                                <div className="text-[11px] px-2.5 py-0.5 rounded-full font-medium" style={{
+                                    color: currentTier.color,
+                                    backgroundColor: `${currentTier.color}20`,
+                                }}>
+                                    {getTierIcon(user?.balance || 0)} {currentTier.label}
+                                </div>
                             </div>
                         </div>
 
                         {currentTier && currentTier.maxBalance !== Infinity && (
-                            <div className="mt-3 pt-3 border-t border-white/10">
-                                <div className="flex justify-between text-xs text-[#868686] mb-1">
-                                    <span>Next: {RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.label || 'Legend'}</span>
-                                    <span style={{ color: RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.color || '#ffd700' }}>
+                            <div className="pt-3 border-t border-[#2d2d2e]">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs text-[#868686]">Next: {RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.label || 'Legend'}</span>
+                                    <span className="text-xs font-medium" style={{
+                                        color: RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.color || '#ffd700'
+                                    }}>
                                         {Math.floor(getProgressToNextTier(user?.balance || 0))}%
                                     </span>
                                 </div>
-                                <div className="w-full bg-[#1f1f20] rounded-full h-1.5">
+                                <div className="w-full bg-[#2d2d2e] rounded-full h-1.5">
                                     <div className="h-1.5 rounded-full transition-all duration-500" style={{
-                                        width: `${getProgressToNextTier(user?.balance || 0)}%`,
+                                        width: `${Math.min(100, getProgressToNextTier(user?.balance || 0))}%`,
                                         backgroundColor: RANK_TIERS[RANK_TIERS.indexOf(currentTier) + 1]?.color || '#ffd700'
                                     }} />
                                 </div>
@@ -422,52 +431,45 @@ const LeaderboardTab = () => {
                     </div>
                 )}
 
-                {/* Top Leaderboard */}
+                {/* Leaderboard List */}
                 <div className="mt-5">
-                    <div className="text-sm font-semibold text-[#fefefe] mb-3 flex items-center gap-2">
-                        <span>Top Holders</span>
-                        <span className="text-[10px] text-[#868686] font-normal">Live · Updates every 5s</span>
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold text-[#fefefe]">Top Holders</span>
+                        <span className="text-[10px] text-[#868686]">Real-time</span>
                     </div>
 
-                    <div className="space-y-1">
-                        {leaderboardData.map((item, index) => {
+                    <div className="space-y-1.5">
+                        {leaderboardData.map((item) => {
                             const tierColor = getTierColor(item.balance)
-                            const tierBgColor = getUserTier(item.balance).bgColor
                             return (
                                 <div 
                                     key={`${item.place}-${item.username}`} 
-                                    className="flex items-center justify-between p-3 rounded-xl border transition-all hover:scale-[1.01]"
-                                    style={{
-                                        background: item.tierLabel === 'Legend' ? 'linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,170,0,0.05))' :
-                                                   item.tierLabel === 'Elite' ? 'linear-gradient(135deg, rgba(236,72,153,0.1), rgba(244,114,182,0.05))' :
-                                                   '#151516',
-                                        borderColor: item.tierLabel === 'Legend' ? '#ffd700' :
-                                                    item.tierLabel === 'Elite' ? '#ec4899' :
-                                                    '#222622'
-                                    }}
+                                    className="flex items-center justify-between p-3 rounded-xl bg-[#151516] border border-[#2d2d2e] transition-all active:scale-[0.99]"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        {item.medal ? (
-                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg bg-gradient-to-br ${item.medal.bg} shadow-lg`}>
-                                                {item.medal.emoji}
-                                            </div>
-                                        ) : (
-                                            <div className="w-9 h-9 rounded-full bg-[#2d2d2e] flex items-center justify-center text-xs text-[#868686] font-bold">
-                                                #{item.place}
-                                            </div>
-                                        )}
-                                        <div>
-                                            <div className="text-sm font-semibold text-[#fefefe]">{item.username}</div>
-                                            <div className="text-xs text-[#868686]">
-                                                {item.balance.toLocaleString()} PAWS
-                                            </div>
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                                            style={{
+                                                background: item.medal ? undefined : '#2d2d2e',
+                                            }}
+                                        >
+                                            {item.medal ? (
+                                                <span className={`flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br ${item.medal.bg} shadow-lg text-base`}>
+                                                    {item.medal.emoji}
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs font-bold text-[#868686]">#{item.place}</span>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-sm font-semibold text-[#fefefe] truncate">{item.username}</div>
+                                            <div className="text-[11px] text-[#868686] truncate">{item.balance.toLocaleString()} PAWS</div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="text-sm px-3 py-1 rounded-full font-medium" style={{
+                                    <div className="flex-shrink-0 ml-2">
+                                        <div className="text-[11px] px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap" style={{
                                             color: tierColor,
-                                            backgroundColor: tierBgColor,
-                                            border: `1px solid ${tierColor}40`
+                                            backgroundColor: `${tierColor}18`,
+                                            border: `1px solid ${tierColor}30`
                                         }}>
                                             {getTierIcon(item.balance)} {item.tierLabel}
                                         </div>
