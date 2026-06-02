@@ -521,11 +521,13 @@ const LeaderboardTab = () => {
                                             )}
                                         </div>
                                         <div className="min-w-0 flex items-center gap-2">
-                                            {item.icon && (
-                                                <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden bg-[#2d2d2e]">
+                                            <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden bg-[#2d2d2e]">
+                                                {item.icon ? (
                                                     <img src={item.icon} alt="" className="w-full h-full object-cover" />
-                                                </div>
-                                            )}
+                                                ) : (
+                                                    <PawsLogo className="w-full h-full p-1" />
+                                                )}
+                                            </div>
                                             <div className="min-w-0">
                                                 <div className="text-sm font-semibold text-[#fefefe] truncate">{item.username}</div>
                                                 <div className="text-[11px] text-[#868686] truncate">{item.balance.toLocaleString()} PAWS</div>
