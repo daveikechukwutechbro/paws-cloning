@@ -507,12 +507,14 @@ const LeaderboardTab = () => {
                                     className="flex items-center justify-between p-3 rounded-xl bg-[#151516] border border-[#2d2d2e] transition-all active:scale-[0.99]"
                                 >
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                                        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm overflow-hidden"
                                             style={{
-                                                background: item.medal ? undefined : '#2d2d2e',
+                                                background: item.medal ? undefined : (item.icon ? undefined : '#2d2d2e'),
                                             }}
                                         >
-                                            {item.medal ? (
+                                            {item.icon ? (
+                                                <img src={item.icon} alt="" className="w-full h-full object-cover" />
+                                            ) : item.medal ? (
                                                 <span className={`flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br ${item.medal.bg} shadow-lg text-base`}>
                                                     {item.medal.emoji}
                                                 </span>
@@ -521,13 +523,6 @@ const LeaderboardTab = () => {
                                             )}
                                         </div>
                                         <div className="min-w-0 flex items-center gap-2">
-                                            <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden bg-[#2d2d2e]">
-                                                {item.icon ? (
-                                                    <img src={item.icon} alt="" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <PawsLogo className="w-full h-full p-1" />
-                                                )}
-                                            </div>
                                             <div className="min-w-0">
                                                 <div className="text-sm font-semibold text-[#fefefe] truncate">{item.username}</div>
                                                 <div className="text-[11px] text-[#868686] truncate">{item.balance.toLocaleString()} PAWS</div>
