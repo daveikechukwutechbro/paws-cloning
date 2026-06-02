@@ -2,9 +2,11 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance, updateCompletedTask } from '@/utils/userUtils'
+import { checkAndQualify } from '@/utils/referralSystem'
+import { startSocialTask, markRedirected, verifyAndReward, getTaskStatus, SocialTaskStatus } from '@/utils/socialTaskSystem'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
 import PawsLogo from '@/icons/PawsLogo'
@@ -61,6 +63,8 @@ const TasksTab = () => {
     const [isOnline, setIsOnline] = useState(true)
     const [balance, setBalance] = useState(50000)
     const [toastMessage, setToastMessage] = useState<string | null>(null)
+    const [socialTaskStatuses, setSocialTaskStatuses] = useState<Record<string, SocialTaskStatus>>({})
+    const [verifyingTaskId, setVerifyingTaskId] = useState<string | null>(null)
     const SOCIAL_PENDING_KEY = 'pendingSocialTask'
 
     const AD_COOLDOWN_MIN = 30000
@@ -98,6 +102,14 @@ const TasksTab = () => {
                         setCompletedTasks(new Set(filtered))
                     }
                 }
+
+                const allNonAdIds = [...socialTasks, ...partnerTasks].map(t => t.id)
+                const statuses: Record<string, SocialTaskStatus> = {}
+                for (const taskId of allNonAdIds) {
+                    const status = await getTaskStatus(user.id, taskId)
+                    statuses[taskId] = status
+                }
+                setSocialTaskStatuses(statuses)
             } catch (error) {
                 console.error('Error loading completed tasks:', error)
             }
@@ -127,28 +139,63 @@ const TasksTab = () => {
     }, [])
 
     useEffect(() => {
-        const checkAndCredit = () => {
+        const checkAndCredit = async () => {
             const stored = sessionStorage.getItem(SOCIAL_PENDING_KEY)
             if (!stored) return
             if (!user?.id) return
             try {
                 const task = JSON.parse(stored)
-                handleTaskReward(task.id, task.reward, true)
+
+                if (AD_TASK_IDS.has(task.id)) {
+                    handleTaskReward(task.id, task.reward, true)
+                    sessionStorage.removeItem(SOCIAL_PENDING_KEY)
+                    return
+                }
+
+                if (verifyingTaskId) return
+                setVerifyingTaskId(task.id)
+
+                try {
+                    const result = await verifyAndReward(user.id, task.id)
+                    if (result.success && result.rewarded) {
+                        showToast(`+${task.reward.toLocaleString()} PAWS earned!`)
+                        refreshUser()
+
+                        const newCompleted = new Set(completedTasks)
+                        newCompleted.add(task.id)
+                        setCompletedTasks(newCompleted)
+
+                        setSocialTaskStatuses(prev => ({
+                            ...prev,
+                            [task.id]: { taskId: task.id, status: 'rewarded', attemptId: prev[task.id]?.attemptId || null, rewarded: true },
+                        }))
+
+                        await updateCompletedTask(user.id, task.id)
+                        checkAndQualify(user.id).catch(() => {})
+                    } else if (result.error && result.error !== 'No task attempt found. Start the task first.') {
+                        showToast('Verification pending — come back after completing the task')
+                    }
+                } finally {
+                    setVerifyingTaskId(null)
+                }
+
                 sessionStorage.removeItem(SOCIAL_PENDING_KEY)
-            } catch { /* */ }
+            } catch { }
         }
+
         checkAndCredit()
         const handleReturn = () => {
             checkAndCredit()
         }
         const handleFocus = () => checkAndCredit()
+
         document.addEventListener('visibilitychange', handleReturn)
         window.addEventListener('focus', handleFocus)
         return () => {
             document.removeEventListener('visibilitychange', handleReturn)
             window.removeEventListener('focus', handleFocus)
         }
-    }, [user])
+    }, [user, completedTasks, verifyingTaskId])
 
     useEffect(() => {
         const entries = Object.entries(adCooldowns).filter(([_, v]) => v > 0)
@@ -219,11 +266,6 @@ const TasksTab = () => {
             return
         }
 
-        if (!AD_TASK_IDS.has(taskId) && completedTasks.has(taskId)) {
-            showToast('Task already completed!')
-            return
-        }
-
         if (!skipAntiFraud && !checkAntiFraud(taskId)) {
             showToast('Please wait before completing another task')
             return
@@ -233,15 +275,6 @@ const TasksTab = () => {
         if (!skipAntiFraud) recordTaskAttempt(taskId)
 
         try {
-            const isAd = AD_TASK_IDS.has(taskId)
-
-            if (!isAd) {
-                const newCompleted = new Set(completedTasks)
-                newCompleted.add(taskId)
-                setCompletedTasks(newCompleted)
-                await updateCompletedTask(user.id, taskId)
-            }
-
             const userRef = doc(db, 'users', user.id)
             const userSnap = await getDoc(userRef)
             const currentServerBalance = userSnap.exists() ? (userSnap.data().balance || 50000) : 50000
@@ -253,21 +286,19 @@ const TasksTab = () => {
             const confirmedBalance = freshSnap.exists() ? (freshSnap.data().balance || 50000) : 50000
             setBalance(confirmedBalance)
 
-            if (isAd) {
-                const cooldown = AD_COOLDOWN_MIN + Math.floor(Math.random() * (AD_COOLDOWN_MAX - AD_COOLDOWN_MIN))
-                setAdCooldowns(prev => ({ ...prev, [taskId]: cooldown }))
-                const newCount = (dailyAdCounts[taskId] || 0) + 1
-                setDailyAdCounts(prev => ({ ...prev, [taskId]: newCount }))
-                localStorage.setItem(`adDailyCounts_${user.id}`, JSON.stringify({
-                    date: new Date().toDateString(),
-                    counts: { ...dailyAdCounts, [taskId]: newCount }
-                }))
-                setAdWatchProgress(prev => {
-                    const newProgress = { ...prev }
-                    delete newProgress[taskId]
-                    return newProgress
-                })
-            }
+            const cooldown = AD_COOLDOWN_MIN + Math.floor(Math.random() * (AD_COOLDOWN_MAX - AD_COOLDOWN_MIN))
+            setAdCooldowns(prev => ({ ...prev, [taskId]: cooldown }))
+            const newCount = (dailyAdCounts[taskId] || 0) + 1
+            setDailyAdCounts(prev => ({ ...prev, [taskId]: newCount }))
+            localStorage.setItem(`adDailyCounts_${user.id}`, JSON.stringify({
+                date: new Date().toDateString(),
+                counts: { ...dailyAdCounts, [taskId]: newCount }
+            }))
+            setAdWatchProgress(prev => {
+                const newProgress = { ...prev }
+                delete newProgress[taskId]
+                return newProgress
+            })
 
             showToast(`+${reward.toLocaleString()} PAWS earned!`)
             refreshUser()
@@ -283,17 +314,33 @@ const TasksTab = () => {
         }
     }
 
-    const startLinkTask = (taskId: string, link: string, reward: number) => {
+    const startLinkTask = async (taskId: string, link: string, reward: number, platform: string) => {
         if (sessionStorage.getItem(SOCIAL_PENDING_KEY)) return
+        if (!user?.id) return
+
+        const result = await startSocialTask(user.id, taskId, reward, platform, link)
+        if (!result.success) {
+            showToast(result.error || 'Failed to start task')
+            return
+        }
+
         sessionStorage.setItem(SOCIAL_PENDING_KEY, JSON.stringify({ id: taskId, reward }))
-        showToast('Come back after following to get your reward!')
+
+        await markRedirected(user.id, taskId)
+
+        setSocialTaskStatuses(prev => ({
+            ...prev,
+            [taskId]: { taskId, status: 'redirected', attemptId: result.attemptId || null, rewarded: false },
+        }))
+
+        showToast('Come back after completing the task to get your reward!')
         try {
             const tg = (window as any).Telegram?.WebApp
             if (tg?.openLink) {
                 tg.openLink(link)
                 return
             }
-        } catch { /* fall through */ }
+        } catch { }
         const win = window.open(link, '_blank')
         if (!win) {
             window.location.href = link
@@ -511,27 +558,27 @@ const TasksTab = () => {
         const taskCount = dailyAdCounts[task.id] || 0
         const remaining = MAX_PER_TASK - taskCount
 
-        if (isCompleted) {
-            return (
-                <button className="h-8 bg-[#333] text-[#888] px-4 rounded-full text-sm font-medium flex items-center cursor-not-allowed">
-                    ✓ Claimed
-                </button>
-            )
-        }
-
-        if (adProgress === 100) {
-            return (
-                <button 
-                    onClick={() => handleTaskReward(task.id, task.reward)}
-                    disabled={isLoading}
-                    className="h-8 bg-[#22c55e] text-white px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#16a34a] transition-colors"
-                >
-                    {isLoading ? '...' : 'Claim'}
-                </button>
-            )
-        }
-
         if (task.type === 'ad' || task.type === 'listen') {
+            if (isCompleted) {
+                return (
+                    <button className="h-8 bg-[#333] text-[#888] px-4 rounded-full text-sm font-medium flex items-center cursor-not-allowed">
+                        ✓ Claimed
+                    </button>
+                )
+            }
+
+            if (adProgress === 100) {
+                return (
+                    <button 
+                        onClick={() => handleTaskReward(task.id, task.reward)}
+                        disabled={isLoading}
+                        className="h-8 bg-[#22c55e] text-white px-4 rounded-full text-sm font-medium flex items-center hover:bg-[#16a34a] transition-colors"
+                    >
+                        {isLoading ? '...' : 'Claim'}
+                    </button>
+                )
+            }
+
             const taskCooldown = adCooldowns[task.id] || 0
             const onCooldown = taskCooldown > 0
             const atLimit = remaining <= 0
@@ -547,12 +594,48 @@ const TasksTab = () => {
             )
         }
 
+        const socialStatus = socialTaskStatuses[task.id]
+        const isRewarded = socialStatus?.status === 'rewarded' || isCompleted
+
+        if (isRewarded) {
+            return (
+                <button className="h-8 bg-[#333] text-[#888] px-4 rounded-full text-sm font-medium flex items-center cursor-not-allowed">
+                    ✓ Claimed
+                </button>
+            )
+        }
+
+        if (socialStatus?.status === 'started' || socialStatus?.status === 'redirected' || socialStatus?.status === 'proof_pending' || verifyingTaskId === task.id) {
+            return (
+                <button disabled className="h-8 bg-[#555] text-[#aaa] px-4 rounded-full text-sm font-medium flex items-center cursor-wait">
+                    {verifyingTaskId === task.id ? 'Verifying...' : 'Pending'}
+                </button>
+            )
+        }
+
+        if (socialStatus?.status === 'verified') {
+            return (
+                <button disabled className="h-8 bg-[#22c55e]/50 text-white px-4 rounded-full text-sm font-medium flex items-center cursor-not-allowed">
+                    Verified
+                </button>
+            )
+        }
+
+        if (socialStatus?.status === 'rejected' || socialStatus?.status === 'expired') {
+            return (
+                <button disabled className="h-8 bg-red-500/50 text-white px-4 rounded-full text-sm font-medium flex items-center cursor-not-allowed">
+                    Failed
+                </button>
+            )
+        }
+
         const isPartner = task.id.startsWith('partner_')
         return (
             <button 
                 onClick={() => {
                     if (task.link) {
-                        startLinkTask(task.id, task.link, task.reward)
+                        const platform = isPartner ? task.title : task.title.toLowerCase().includes('x') ? 'X' : task.title.split(' ').pop() || 'social'
+                        startLinkTask(task.id, task.link, task.reward, platform)
                     }
                 }}
                 disabled={isLoading}

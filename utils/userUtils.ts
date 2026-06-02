@@ -1,6 +1,6 @@
 import { doc, getDoc, increment, setDoc, Timestamp, runTransaction } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
-import { processNewReferral, REFERRAL_TIERS } from '@/utils/referralSystem'
+import { processNewReferral, REFERRAL_TIERS, REFERRAL_REWARDS } from '@/utils/referralSystem'
 import { ActiveMiningUpgrade, MINING_UPGRADES, calculateNextExpiry } from './miningUpgrades'
 
 export interface ReferralFriend {
@@ -126,12 +126,9 @@ export async function applyReferralReward(userId: string): Promise<void> {
                 return
             }
 
-            const bonusForNewUser = 2000
-            const currentBalance = userData.balance || 50000
-
             transaction.update(userRef, {
-                balance: currentBalance + bonusForNewUser,
-                referralRewardClaimed: true
+                balance: increment(REFERRAL_REWARDS.referredSignupBonus),
+                referralRewardClaimed: true,
             })
         })
     } catch (error) {

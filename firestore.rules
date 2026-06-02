@@ -16,10 +16,19 @@ service cloud.firestore {
             'referralCount',
             'premiumReferralCount',
             'referralEarnings',
+            'referralHourlyCount',
+            'referralDailyCount',
+            'lastReferralHourReset',
+            'lastReferralDayReset',
             'friendsList',
             'tierLevel',
             'tierRewardsClaimed',
             'lastReferralAt',
+            'referredBy',
+            'lastTaskCompletedAt',
+            'completedTasks',
+            'miningUpgrades',
+            'miningUpgradedAt',
             'upgrade_taps',
             'upgrade_energy',
             'upgrade_timer'
@@ -27,6 +36,28 @@ service cloud.firestore {
           || request.auth != null
         );
       
+      allow delete: if false;
+    }
+
+    match /referrals/{referralId} {
+      allow read: if true;
+      allow create: if referralId.startsWith('ref_');
+      allow update: if referralId.startsWith('ref_')
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'rewardAmount',
+          'qualifiedAt',
+          'rewardedAt',
+          'rejectedAt',
+          'rejectionReason'
+        ]);
+      allow delete: if false;
+    }
+
+    match /reward_ledger/{entryId} {
+      allow read: if true;
+      allow create: if entryId.startsWith('reward_');
+      allow update: if false;
       allow delete: if false;
     }
   }

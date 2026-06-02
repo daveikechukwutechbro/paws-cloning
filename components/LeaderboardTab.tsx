@@ -3,7 +3,7 @@
 import PawsLogo from '@/icons/PawsLogo'
 import { trophy } from '@/images/'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { getUserTier, getEstimatedRank, getNextTier, getProgressToNextTier, RANK_TIERS } from '@/utils/rankingSystem'
 import { getCurrentUserCount, formatUserCount } from '@/utils/userGrowth'
@@ -14,6 +14,7 @@ type LeaderboardItem = {
     place: number
     medal?: { emoji: string; bg: string } | null
     tierLabel: string
+    icon?: string | null
 }
 
 // Massive realistic global human name pools (all continents)
@@ -151,14 +152,11 @@ const baseBalances = [
     95_000, 87_000, 78_000, 68_000, 55_000, 42_000, 28_000, 12_000,
 ]
 
-// Medal mapping - show tier badges
-const getMedal = (place: number, tierLabel: string) => {
+// Medal mapping - only top 3 get medals, others show rank number
+const getMedal = (place: number) => {
     if (place === 1) return { emoji: '👑', bg: 'from-[#ffd700] to-[#b8860b]' }
     if (place === 2) return { emoji: '🥈', bg: 'from-[#c0c0c0] to-[#808080]' }
     if (place === 3) return { emoji: '🥉', bg: 'from-[#cd7f32] to-[#8b4513]' }
-    if (tierLabel === 'Legend') return { emoji: '👑', bg: 'from-[#ffd700] to-[#ffaa00]' }
-    if (tierLabel === 'Elite') return { emoji: '🔮', bg: 'from-[#8b5cf6] to-[#a78bfa]' }
-    if (tierLabel === 'Whale') return { emoji: '🐋', bg: 'from-[#a855f7] to-[#c084fc]' }
     return null
 }
 
@@ -203,9 +201,11 @@ function getTimeWindow(intervalSeconds: number): number {
     return Math.floor(Date.now() / 1000 / intervalSeconds)
 }
 
-function getUsernameForTier(tierLabel: string, indexInTier: number, timeWindows: Record<string, number>): string {
+function getUsernameForTier(tierLabel: string, indexInTier: number, timeWindows: Record<string, number>, nowOverride?: number): string {
     const pool = namePools[tierLabel]
     if (!pool) return 'Unknown'
+
+    const now = nowOverride ?? Date.now()
 
     // Whale, Elite & Legend: static names (only change when user reaches threshold)
     if (tierLabel === 'Whale' || tierLabel === 'Elite' || tierLabel === 'Legend') {
@@ -222,7 +222,7 @@ function getUsernameForTier(tierLabel: string, indexInTier: number, timeWindows:
     }
 
     const interval = tierIntervals[tierLabel] || 3
-    const windowKey = Math.floor(Date.now() / 1000 / interval)
+    const windowKey = Math.floor(now / 1000 / interval)
     const shuffledPool = seededShuffle(pool, windowKey)
     return shuffledPool[indexInTier % shuffledPool.length]
 }
@@ -232,22 +232,40 @@ const LeaderboardTab = () => {
     const [userRank, setUserRank] = useState('#--')
     const [timeWindows, setTimeWindows] = useState<Record<string, number>>({})
     const [currentUsers, setCurrentUsers] = useState(getCurrentUserCount())
+    const [isOnline, setIsOnline] = useState(true)
+    const frozenTimestamp = useRef(Date.now())
     const totalUserProgress = Math.min(100, Math.floor((currentUsers / totalUserTarget) * 100))
 
     useEffect(() => {
-        const interval = setInterval(() => setCurrentUsers(getCurrentUserCount()), 30000)
-        return () => clearInterval(interval)
+        const goOnline = () => { setIsOnline(true); frozenTimestamp.current = Date.now() }
+        const goOffline = () => { setIsOnline(false); frozenTimestamp.current = Date.now() }
+        frozenTimestamp.current = Date.now()
+        setIsOnline(navigator.onLine)
+        window.addEventListener('online', goOnline)
+        window.addEventListener('offline', goOffline)
+        return () => {
+            window.removeEventListener('online', goOnline)
+            window.removeEventListener('offline', goOffline)
+        }
     }, [])
 
-    // Update time windows to trigger re-renders
+    useEffect(() => {
+        if (!isOnline) return
+        const interval = setInterval(() => setCurrentUsers(getCurrentUserCount()), 30000)
+        return () => clearInterval(interval)
+    }, [isOnline])
+
+    // Update time windows to trigger re-renders (only when online)
     useEffect(() => {
         const updateWindows = () => {
-            setTimeWindows({
-                Newcomer: getTimeWindow(6),
-                Active: getTimeWindow(1800),
-                Trusted: getTimeWindow(3600),
-                Influencer: getTimeWindow(172800),
-            })
+            if (navigator.onLine) {
+                setTimeWindows({
+                    Newcomer: getTimeWindow(6),
+                    Active: getTimeWindow(1800),
+                    Trusted: getTimeWindow(3600),
+                    Influencer: getTimeWindow(172800),
+                })
+            }
         }
         updateWindows()
         const interval = setInterval(updateWindows, 6000)
@@ -265,18 +283,51 @@ const LeaderboardTab = () => {
 
     const currentTier = user ? getUserTier(user.balance || 0) : null
 
+    // Custom names and icons for top 14 entries
+    const customNames: Record<number, string> = {
+        0: 'Miles Deutscher',
+        3: 'Crypto Capo',
+        5: 'Sasha',
+        8: 'Elio airdrop queen',
+        10: 'Murad Mahmudov',
+        11: 'Ash Crypto Hunter',
+    }
+
+    const entryIcons: Record<number, string> = {
+        0: 'https://i.imgur.com/n9P1XZq.png',
+        1: 'https://i.imgur.com/VjxGg7r.png',
+        2: 'https://i.imgur.com/xIakklb.png',
+        3: 'https://i.imgur.com/UxfGhXz.png',
+        4: 'https://i.imgur.com/UgAe5Lr.png',
+        5: 'https://i.imgur.com/GqTFnuh.png',
+        6: 'https://i.imgur.com/qQpZKvj.png',
+        7: 'https://i.imgur.com/XqNEeC6.png',
+        8: 'https://i.imgur.com/2VwqadO.png',
+        9: 'https://i.imgur.com/IBKrbvu.png',
+        10: 'https://i.imgur.com/KFEebQT.png',
+        11: 'https://i.imgur.com/39EVvkp.png',
+        12: 'https://i.imgur.com/SzqCmoH.png',
+        13: 'https://i.imgur.com/FYFMtTu.png',
+    }
+
     // Build dynamic leaderboard data sequentially to enforce food chain
     const leaderboardData: LeaderboardItem[] = []
     const tierOrder = ['Newcomer', 'Active', 'Trusted', 'Influencer', 'Whale', 'Elite', 'Legend']
+    const now = isOnline ? Date.now() : frozenTimestamp.current
     const weekDuration = 7 * 86400000
-    const weeksSinceEpoch = Math.floor(Date.now() / weekDuration)
-    const weekProgress = Math.min(1, (Date.now() % weekDuration) / weekDuration)
+    const weeksSinceEpoch = Math.floor(now / weekDuration)
+    const weekProgress = Math.min(1, (now % weekDuration) / weekDuration)
 
     baseBalances.forEach((balance, index) => {
         const tier = getUserTier(balance)
         const tierStartIndex = baseBalances.findIndex(b => getUserTier(b).label === tier.label)
         const indexInTier = index - tierStartIndex
-        const username = getUsernameForTier(tier.label, indexInTier, timeWindows)
+        let username = getUsernameForTier(tier.label, indexInTier, timeWindows, isOnline ? undefined : frozenTimestamp.current)
+
+        // Override custom names for top entries
+        if (index in customNames) {
+            username = customNames[index]
+        }
 
         // Balance logic per tier - maintain food chain: Legend > Elite > Whale > Influencer > Trusted > Active > Newcomer
         let adjustedBalance = balance
@@ -355,8 +406,9 @@ const LeaderboardTab = () => {
             username,
             balance: adjustedBalance,
             place: index + 1,
-            medal: getMedal(index + 1, tier.label),
+            medal: getMedal(index + 1),
             tierLabel: tier.label,
+            icon: entryIcons[index] || null,
         })
     })
 
@@ -381,6 +433,14 @@ const LeaderboardTab = () => {
                         <div className="mt-1 text-[11px] text-[#868686] text-right">{totalUserProgress}% of target</div>
                     </div>
                 </div>
+
+                {/* Offline indicator */}
+                {!isOnline && (
+                    <div className="mt-3 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                        <span className="text-xs text-red-400 font-medium">You're offline — data is frozen</span>
+                    </div>
+                )}
 
                 {/* User Card - Only visible for Whale, Elite, and Legend */}
                 {currentTier && (currentTier.label === 'Whale' || currentTier.label === 'Elite' || currentTier.label === 'Legend') && (
@@ -435,7 +495,7 @@ const LeaderboardTab = () => {
                 <div className="mt-5">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-semibold text-[#fefefe]">Top Holders</span>
-                        <span className="text-[10px] text-[#868686]">Real-time</span>
+                        <span className="text-[10px] text-[#868686]">{isOnline ? 'Real-time' : 'Frozen'}</span>
                     </div>
 
                     <div className="space-y-1.5">
@@ -460,9 +520,16 @@ const LeaderboardTab = () => {
                                                 <span className="text-xs font-bold text-[#868686]">#{item.place}</span>
                                             )}
                                         </div>
-                                        <div className="min-w-0">
-                                            <div className="text-sm font-semibold text-[#fefefe] truncate">{item.username}</div>
-                                            <div className="text-[11px] text-[#868686] truncate">{item.balance.toLocaleString()} PAWS</div>
+                                        <div className="min-w-0 flex items-center gap-2">
+                                            {item.icon && (
+                                                <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden bg-[#2d2d2e]">
+                                                    <img src={item.icon} alt="" className="w-full h-full object-cover" />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-semibold text-[#fefefe] truncate">{item.username}</div>
+                                                <div className="text-[11px] text-[#868686] truncate">{item.balance.toLocaleString()} PAWS</div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="flex-shrink-0 ml-2">

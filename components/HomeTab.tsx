@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance, updateCompletedTask } from '@/utils/userUtils'
+import { checkAndQualify } from '@/utils/referralSystem'
 import {
     connectWalletWithProvider,
     disconnectWallet,
@@ -58,6 +59,7 @@ const HomeTab = () => {
     const [showTokenomics, setShowTokenomics] = useState(false)
     const [showMiningShop, setShowMiningShop] = useState(false)
     const [airdropCount, setAirdropCount] = useState(0)
+    const [isOnline, setIsOnline] = useState(true)
     const AIRDROP_TARGET = 2_000_000
     const [selectedPresale, setSelectedPresale] = useState<string | null>(null)
     const [presaleTxHash, setPresaleTxHash] = useState('')
@@ -96,9 +98,10 @@ const HomeTab = () => {
 
     useEffect(() => {
         setAirdropCount(getCurrentUserCount())
+        if (!isOnline) return
         const interval = setInterval(() => setAirdropCount(getCurrentUserCount()), 30000)
         return () => clearInterval(interval)
-    }, [])
+    }, [isOnline])
 
     useEffect(() => {
         const savedLastClaim = localStorage.getItem(timerKey)
@@ -110,6 +113,18 @@ const HomeTab = () => {
             }
         }
     }, [timerKey])
+
+    useEffect(() => {
+        setIsOnline(navigator.onLine)
+        const goOnline = () => { setIsOnline(true) }
+        const goOffline = () => { setIsOnline(false) }
+        window.addEventListener('online', goOnline)
+        window.addEventListener('offline', goOffline)
+        return () => {
+            window.removeEventListener('online', goOnline)
+            window.removeEventListener('offline', goOffline)
+        }
+    }, [])
 
     useEffect(() => {
         const initializeWalletState = async () => {
@@ -254,6 +269,7 @@ const HomeTab = () => {
                     const currentBalance = data?.balance || 50000
                     await updateUserBalance(user.id, currentBalance + 100000)
                     await updateCompletedTask(user.id, 'connect_wallet')
+                    checkAndQualify(user.id).catch(() => {})
                     refreshUser()
                 }
             } catch {}
@@ -374,6 +390,13 @@ const HomeTab = () => {
                 </button>
             </div>
 
+            {!isOnline && (
+                <div className="mt-3 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-2 mx-4">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-xs text-red-400 font-medium">You're offline — data is frozen</span>
+                </div>
+            )}
+
             <div className="px-4 mt-6">
                 <div className="bg-[#ffffff0d] border-[1px] border-[#2d2d2e] rounded-lg p-4">
                     <div className="text-center mb-3">
@@ -388,10 +411,10 @@ const HomeTab = () => {
                     ) : (
                         <button
                             onClick={claimHourlyReward}
-                            disabled={isClaiming}
+                            disabled={isClaiming || !isOnline}
                             className="w-full bg-[#007aff] text-white py-2 rounded-lg font-medium hover:bg-[#0056cc] transition-colors disabled:opacity-50"
                         >
-                            {isClaiming ? 'Claiming...' : `Claim ${REWARDS.MINING_PER_HOUR.toLocaleString()} PAWS`}
+                            {!isOnline ? 'Offline' : isClaiming ? 'Claiming...' : `Claim ${REWARDS.MINING_PER_HOUR.toLocaleString()} PAWS`}
                         </button>
                     )}
                 </div>

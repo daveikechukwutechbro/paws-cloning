@@ -4,8 +4,8 @@ import { paws } from '@/images'
 import Image from 'next/image'
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { useUser } from '@/contexts/UserContext'
-import { REFERRAL_TIERS, REFERRAL_REWARDS, getReferralStats, getFriendsList, claimTierReward, claimAllAvailableRewards, ReferralTier, formatReferralLink } from '@/utils/referralSystem'
-import type { ReferralFriend, ReferralStats } from '@/utils/referralSystem'
+import { REFERRAL_TIERS, REFERRAL_REWARDS, getReferrerStats, getFriendsList, claimTierReward, claimAllAvailableRewards, ReferralTier, formatReferralLink, getReferralStatus, ReferralStatus } from '@/utils/referralSystem'
+import type { ReferralFriend, ReferrerStats } from '@/utils/referralSystem'
 
 const POLL_INTERVAL_MS = 15000
 const BOT_USERNAME = 'Pawscloudminebot'
@@ -20,8 +20,9 @@ const tierColors: Record<string, { bg: string; text: string; gradient: string }>
 
 const FriendsTab = () => {
     const { user, refreshUser } = useUser()
-    const [stats, setStats] = useState<ReferralStats | null>(null)
+    const [stats, setStats] = useState<ReferrerStats | null>(null)
     const [friendsList, setFriendsList] = useState<ReferralFriend[]>([])
+    const [referralStatus, setReferralStatus] = useState<{ referred: boolean; status: ReferralStatus | null; referrerName?: string } | null>(null)
     const [showFriendsList, setShowFriendsList] = useState(false)
     const [claimingTier, setClaimingTier] = useState<number | null>(null)
     const [showShareModal, setShowShareModal] = useState(false)
@@ -34,12 +35,14 @@ const FriendsTab = () => {
         if (!user?.id) return
         try {
             setError(null)
-            const [statsData, friends] = await Promise.all([
-                getReferralStats(user.id),
-                getFriendsList(user.id)
+            const [statsData, friends, refStatus] = await Promise.all([
+                getReferrerStats(user.id),
+                getFriendsList(user.id),
+                getReferralStatus(user.id),
             ])
             setStats(statsData)
             setFriendsList(friends)
+            setReferralStatus(refStatus)
         } catch (err: any) {
             console.error('Error loading referral data:', err)
             setError(err.message || 'Failed to load referral data')
@@ -198,6 +201,29 @@ const FriendsTab = () => {
                 </div>
             )}
 
+            {/* Referral Status - shown when current user was referred by someone */}
+            {referralStatus?.referred && (
+                <div className="mt-4 bg-[#151516] border border-[#2d2d2e] rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#1f1f20] flex items-center justify-center text-lg">
+                            {referralStatus.status === 'rewarded' ? '✅' : referralStatus.status === 'pending' ? '⏳' : referralStatus.status === 'qualified' ? '🎯' : '📩'}
+                        </div>
+                        <div>
+                            <div className="text-sm font-semibold text-[#fefefe]">Referred by {referralStatus.referrerName || 'someone'}</div>
+                            <div className="text-xs text-[#8e8e93]">
+                                {referralStatus.status === 'rewarded'
+                                    ? 'You completed the onboarding — your referrer was rewarded!'
+                                    : referralStatus.status === 'pending'
+                                        ? 'Pending — complete tasks to qualify your referrer'
+                                        : referralStatus.status === 'qualified'
+                                            ? 'Qualified — reward pending'
+                                            : 'Referral recorded'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Main Stats Card */}
             <div className="mt-6 bg-gradient-to-br from-[#1a1a2e] to-[#151516] border border-[#2d2d2e] rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
@@ -207,7 +233,7 @@ const FriendsTab = () => {
                     </div>
                     {stats?.currentTier && (
                         <div className={`px-3 py-1.5 rounded-full text-sm font-bold text-black bg-gradient-to-br ${tierColors[stats.currentTier.label]?.bg || 'from-gray-500 to-gray-600'}`}>
-                            {tierColors[stats.currentTier.label]?.icon || '⭐'} {stats.currentTier.label}
+                            {stats.currentTier.icon || '⭐'} {stats.currentTier.label}
                         </div>
                     )}
                 </div>
@@ -216,7 +242,7 @@ const FriendsTab = () => {
                     <div className="mb-4">
                         <div className="flex justify-between text-xs text-gray-400 mb-1.5">
                             <span>{stats.totalFriends} / {stats.nextTier.requiredFriends} friends</span>
-                            <span className={tierColors[stats.nextTier.label]?.text}>Next: {tierColors[stats.nextTier.label]?.icon} {stats.nextTier.label}</span>
+                            <span className={tierColors[stats.nextTier.label]?.text}>Next: {stats.nextTier.icon} {stats.nextTier.label}</span>
                         </div>
                         <div className="w-full bg-[#2d2d2e] rounded-full h-2.5 overflow-hidden">
                             <div 
@@ -248,6 +274,28 @@ const FriendsTab = () => {
                         <div className="text-xl font-bold text-blue-400">{stats?.totalEarnings.toLocaleString() || 0}</div>
                     </div>
                 </div>
+
+                {/* Referral Breakdown */}
+                {stats && stats.totalReferrals > 0 && (
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                        <div className="bg-[#1f1f20] p-2 rounded-lg text-center">
+                            <div className="text-[10px] text-[#8e8e93]">Pending</div>
+                            <div className="text-sm font-bold text-yellow-400">{stats.pendingReferrals}</div>
+                        </div>
+                        <div className="bg-[#1f1f20] p-2 rounded-lg text-center">
+                            <div className="text-[10px] text-[#8e8e93]">Qualified</div>
+                            <div className="text-sm font-bold text-blue-400">{stats.qualifiedReferrals}</div>
+                        </div>
+                        <div className="bg-[#1f1f20] p-2 rounded-lg text-center">
+                            <div className="text-[10px] text-[#8e8e93]">Rewarded</div>
+                            <div className="text-sm font-bold text-green-400">{stats.rewardedReferrals}</div>
+                        </div>
+                        <div className="bg-[#1f1f20] p-2 rounded-lg text-center">
+                            <div className="text-[10px] text-[#8e8e93]">Rejected</div>
+                            <div className="text-sm font-bold text-red-400">{stats.rejectedReferrals}</div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Claimable Rewards */}
