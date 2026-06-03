@@ -519,7 +519,7 @@ const LeaderboardTab = () => {
                                                     {item.medal.emoji}
                                                 </span>
                                             ) : (
-                                                <PawsLogo className="w-full h-full p-1" />
+                                                <PawsLogo className="w-full h-full object-cover" />
                                             )}
                                         </div>
                                         <div className="min-w-0 flex items-center gap-2">
