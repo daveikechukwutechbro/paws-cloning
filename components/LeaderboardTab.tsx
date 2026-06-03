@@ -521,7 +521,6 @@ const LeaderboardTab = () => {
                                             ) : (
                                                 <PawsLogo className="w-full h-full p-1" />
                                             )}
-                                            )}
                                         </div>
                                         <div className="min-w-0 flex items-center gap-2">
                                             <div className="min-w-0">
