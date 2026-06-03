@@ -509,7 +509,7 @@ const LeaderboardTab = () => {
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm overflow-hidden"
                                             style={{
-                                                background: item.medal ? undefined : (item.icon ? undefined : '#2d2d2e'),
+                                                background: item.icon || item.medal ? undefined : '#2d2d2e',
                                             }}
                                         >
                                             {item.icon ? (
@@ -519,7 +519,8 @@ const LeaderboardTab = () => {
                                                     {item.medal.emoji}
                                                 </span>
                                             ) : (
-                                                <span className="text-xs font-bold text-[#868686]">#{item.place}</span>
+                                                <PawsLogo className="w-full h-full p-1" />
+                                            )}
                                             )}
                                         </div>
                                         <div className="min-w-0 flex items-center gap-2">

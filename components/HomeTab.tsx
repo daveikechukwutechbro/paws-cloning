@@ -161,6 +161,9 @@ const HomeTab = () => {
             
             const now = Date.now()
             localStorage.setItem(timerKey, now.toString())
+            const miningKey = `miningSessions_${userId}`
+            const currentSessions = parseInt(localStorage.getItem(miningKey) || '0')
+            localStorage.setItem(miningKey, (currentSessions + 1).toString())
 
             await updateUserBalance(userId, newBalance)
             

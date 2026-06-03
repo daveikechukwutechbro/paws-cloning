@@ -41,15 +41,8 @@ const AirdropEligibility = () => {
     }, [])
 
     const computeStatus = () => {
-        const timerKey = user?.id ? `lastClaim_${user.id}` : 'lastClaim_default'
-        const savedLastClaim = localStorage.getItem(timerKey)
-
-        let miningSessions = 0
-        if (savedLastClaim) {
-            const firstClaimTime = parseInt(savedLastClaim)
-            const elapsed = Date.now() - firstClaimTime
-            miningSessions = Math.min(Math.floor(elapsed / 3600000), 200)
-        }
+        const miningKey = user?.id ? `miningSessions_${user.id}` : 'miningSessions_default'
+        const miningSessions = parseInt(localStorage.getItem(miningKey) || '0')
 
         const lastTx = localStorage.getItem('last_ton_transaction')
         return checkAirdropEligibility(miningSessions, lastTx)
