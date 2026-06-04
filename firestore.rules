@@ -60,5 +60,27 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if false;
     }
+
+    match /task_attempts/{attemptId} {
+      allow read: if true;
+      allow create: if attemptId.startsWith('attempt_');
+      allow update: if attemptId.startsWith('attempt_')
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'redirectedAt',
+          'verifiedAt',
+          'rewardedAt',
+          'rejectedAt',
+          'rejectionReason'
+        ]);
+      allow delete: if false;
+    }
+
+    match /task_reward_ledger/{entryId} {
+      allow read: if true;
+      allow create: if entryId.startsWith('soc_reward_');
+      allow update: if false;
+      allow delete: if false;
+    }
   }
 }

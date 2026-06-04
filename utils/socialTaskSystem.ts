@@ -60,19 +60,24 @@ function generateLedgerId(idempotencyKey: string): string {
 
 export async function getTaskStatus(userId: string, taskId: string): Promise<SocialTaskStatus> {
     const attemptId = generateAttemptId(userId, taskId)
-    const attemptRef = doc(db, 'task_attempts', attemptId)
-    const attemptSnap = await getDoc(attemptRef)
+    try {
+        const attemptRef = doc(db, 'task_attempts', attemptId)
+        const attemptSnap = await getDoc(attemptRef)
 
-    if (!attemptSnap.exists()) {
+        if (!attemptSnap.exists()) {
+            return { taskId, status: 'available', attemptId: null, rewarded: false }
+        }
+
+        const data = attemptSnap.data() as TaskAttempt
+        return {
+            taskId,
+            status: data.status,
+            attemptId: data.id,
+            rewarded: data.status === 'rewarded',
+        }
+    } catch (error) {
+        console.error('getTaskStatus error:', error)
         return { taskId, status: 'available', attemptId: null, rewarded: false }
-    }
-
-    const data = attemptSnap.data() as TaskAttempt
-    return {
-        taskId,
-        status: data.status,
-        attemptId: data.id,
-        rewarded: data.status === 'rewarded',
     }
 }
 
