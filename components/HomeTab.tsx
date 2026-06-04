@@ -289,7 +289,7 @@ const HomeTab = () => {
     if (loading && displayBalance === 50000) {
         return (
             <div className="home-tab-con flex flex-col items-center justify-center min-h-[400px]">
-                <PawsLogo className="w-28 h-28 animate-pulse" />
+                <PawsLogo className="w-36 h-36 animate-pulse" />
                 <div className="mt-4 text-gray-400">Loading...</div>
             </div>
         )
@@ -373,7 +373,7 @@ const HomeTab = () => {
             )}
 
             <div className="flex flex-col items-center mt-8">
-                <PawsLogo className="w-36 h-36 mb-4" />
+                <PawsLogo className="w-44 h-44 mb-4" />
                 <div className="flex items-center gap-1 text-center">
                     <div className="text-6xl font-bold mb-1">{displayBalance.toLocaleString()}</div>
                     <div className="text-white text-2xl">PAWS</div>

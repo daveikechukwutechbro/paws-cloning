@@ -4,7 +4,7 @@ export default function Loading() {
             <img
                 src="https://i.imgur.com/MJZKj03.png"
                 alt="PAWS"
-                className="w-32 h-32 object-contain animate-pulse"
+                className="w-40 h-40 object-contain animate-pulse"
             />
             <div className="mt-6 text-white text-2xl font-bold tracking-wider">PAWS</div>
             <div className="mt-2 text-gray-500 text-sm">Loading...</div>
