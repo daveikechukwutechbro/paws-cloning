@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { updateUserBalance, updateCompletedTask } from '@/utils/userUtils'
 import { checkAndQualify } from '@/utils/referralSystem'
-import { startSocialTask, markRedirected, verifyAndReward, getTaskStatus, SocialTaskStatus } from '@/utils/socialTaskSystem'
+import { getTaskStatus, SocialTaskStatus } from '@/utils/socialTaskSystem'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/utils/firebaseClient'
 import PawsLogo from '@/icons/PawsLogo'
@@ -64,7 +64,6 @@ const TasksTab = () => {
     const [balance, setBalance] = useState(50000)
     const [toastMessage, setToastMessage] = useState<string | null>(null)
     const [socialTaskStatuses, setSocialTaskStatuses] = useState<Record<string, SocialTaskStatus>>({})
-    const [verifyingTaskId, setVerifyingTaskId] = useState<string | null>(null)
     const SOCIAL_PENDING_KEY = 'pendingSocialTask'
 
     const AD_COOLDOWN_MIN = 30000
@@ -145,57 +144,32 @@ const TasksTab = () => {
             if (!user?.id) return
             try {
                 const task = JSON.parse(stored)
+                sessionStorage.removeItem(SOCIAL_PENDING_KEY)
 
                 if (AD_TASK_IDS.has(task.id)) {
                     handleTaskReward(task.id, task.reward, true)
-                    sessionStorage.removeItem(SOCIAL_PENDING_KEY)
                     return
                 }
 
-                if (verifyingTaskId) return
-                setVerifyingTaskId(task.id)
-
-                try {
-                    const result = await verifyAndReward(user.id, task.id)
-                    if (result.success && result.rewarded) {
-                        showToast(`+${task.reward.toLocaleString()} PAWS earned!`)
-                        refreshUser()
-
-                        const newCompleted = new Set(completedTasks)
-                        newCompleted.add(task.id)
-                        setCompletedTasks(newCompleted)
-
-                        setSocialTaskStatuses(prev => ({
-                            ...prev,
-                            [task.id]: { taskId: task.id, status: 'rewarded', attemptId: prev[task.id]?.attemptId || null, rewarded: true },
-                        }))
-
-                        await updateCompletedTask(user.id, task.id)
-                        checkAndQualify(user.id).catch(() => {})
-                    } else if (result.error && result.error !== 'No task attempt found. Start the task first.') {
-                        showToast('Verification pending — come back after completing the task')
-                    }
-                } finally {
-                    setVerifyingTaskId(null)
+                if (completedTasks.has(task.id)) {
+                    showToast('Task already completed!')
+                    return
                 }
 
-                sessionStorage.removeItem(SOCIAL_PENDING_KEY)
+                handleLinkTaskReward(task.id, task.reward)
             } catch { }
         }
 
         checkAndCredit()
-        const handleReturn = () => {
-            checkAndCredit()
-        }
+        const handleReturn = () => { checkAndCredit() }
         const handleFocus = () => checkAndCredit()
-
         document.addEventListener('visibilitychange', handleReturn)
         window.addEventListener('focus', handleFocus)
         return () => {
             document.removeEventListener('visibilitychange', handleReturn)
             window.removeEventListener('focus', handleFocus)
         }
-    }, [user, completedTasks, verifyingTaskId])
+    }, [user, completedTasks])
 
     useEffect(() => {
         const entries = Object.entries(adCooldowns).filter(([_, v]) => v > 0)
@@ -314,25 +288,43 @@ const TasksTab = () => {
         }
     }
 
-    const startLinkTask = async (taskId: string, link: string, reward: number, platform: string) => {
-        if (sessionStorage.getItem(SOCIAL_PENDING_KEY)) return
+    const handleLinkTaskReward = async (taskId: string, reward: number) => {
         if (!user?.id) return
+        setLoadingTasks(prev => new Set(prev).add(taskId))
+        try {
+            const userRef = doc(db, 'users', user.id)
+            const userSnap = await getDoc(userRef)
+            const currentBalance = userSnap.exists() ? (userSnap.data().balance || 50000) : 50000
+            await updateUserBalance(user.id, currentBalance + reward)
 
-        const result = await startSocialTask(user.id, taskId, reward, platform, link)
-        if (!result.success) {
-            showToast(result.error || 'Failed to start task')
-            return
+            const newCompleted = new Set(completedTasks)
+            newCompleted.add(taskId)
+            setCompletedTasks(newCompleted)
+            await updateCompletedTask(user.id, taskId)
+            checkAndQualify(user.id).catch(() => {})
+
+            setSocialTaskStatuses(prev => ({
+                ...prev,
+                [taskId]: { taskId, status: 'rewarded', attemptId: null, rewarded: true },
+            }))
+
+            showToast(`+${reward.toLocaleString()} PAWS earned!`)
+            refreshUser()
+        } catch (error) {
+            console.error('Error rewarding link task:', error)
+            showToast('Failed to claim reward. Try again.')
+        } finally {
+            setLoadingTasks(prev => {
+                const newSet = new Set(prev)
+                newSet.delete(taskId)
+                return newSet
+            })
         }
+    }
 
+    const startLinkTask = async (taskId: string, link: string, reward: number) => {
+        if (sessionStorage.getItem(SOCIAL_PENDING_KEY)) return
         sessionStorage.setItem(SOCIAL_PENDING_KEY, JSON.stringify({ id: taskId, reward }))
-
-        await markRedirected(user.id, taskId)
-
-        setSocialTaskStatuses(prev => ({
-            ...prev,
-            [taskId]: { taskId, status: 'redirected', attemptId: result.attemptId || null, rewarded: false },
-        }))
-
         showToast('Come back after completing the task to get your reward!')
         try {
             const tg = (window as any).Telegram?.WebApp
@@ -634,8 +626,7 @@ const TasksTab = () => {
             <button 
                 onClick={() => {
                     if (task.link) {
-                        const platform = isPartner ? task.title : task.title.toLowerCase().includes('x') ? 'X' : task.title.split(' ').pop() || 'social'
-                        startLinkTask(task.id, task.link, task.reward, platform)
+                        startLinkTask(task.id, task.link, task.reward)
                     }
                 }}
                 disabled={isLoading}
