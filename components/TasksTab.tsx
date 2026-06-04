@@ -597,10 +597,10 @@ const TasksTab = () => {
             )
         }
 
-        if (socialStatus?.status === 'started' || socialStatus?.status === 'redirected' || socialStatus?.status === 'proof_pending' || verifyingTaskId === task.id) {
+        if (socialStatus?.status === 'started' || socialStatus?.status === 'redirected' || socialStatus?.status === 'proof_pending') {
             return (
                 <button disabled className="h-8 bg-[#555] text-[#aaa] px-4 rounded-full text-sm font-medium flex items-center cursor-wait">
-                    {verifyingTaskId === task.id ? 'Verifying...' : 'Pending'}
+                    Pending
                 </button>
             )
         }
