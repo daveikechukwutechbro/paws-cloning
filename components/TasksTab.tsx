@@ -553,7 +553,7 @@ const TasksTab = () => {
         if (task.type === 'ad' || task.type === 'listen') {
             if (isCompleted) {
                 return (
-                    <button className="h-8 bg-[#333] text-[#888] px-4 rounded-full text-sm font-medium flex items-center cursor-not-allowed">
+                    <button className="h-8 bg-[#22c55e]/20 text-[#22c55e] px-4 rounded-full text-sm font-medium flex items-center cursor-not-allowed">
                         ✓ Claimed
                     </button>
                 )
