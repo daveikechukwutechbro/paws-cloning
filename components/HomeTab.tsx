@@ -29,6 +29,7 @@ import { getCurrentUserCount, formatUserCount } from '@/utils/userGrowth'
 import { REWARDS } from '@/utils/types'
 import { PRESALE_PACKAGES, PRESALE_RECEIVING_WALLET, formatPresaleAmount } from '@/utils/preSale'
 import { processPreSalePurchase } from '@/utils/userUtils'
+import { getPawsPrice, formatPawsPrice } from '@/utils/priceFeed'
 
 const HomeTab = () => {
     const { user, loading, refreshUser } = useUser()
@@ -60,6 +61,7 @@ const HomeTab = () => {
     const [showMiningShop, setShowMiningShop] = useState(false)
     const [airdropCount, setAirdropCount] = useState(0)
     const [isOnline, setIsOnline] = useState(true)
+    const [pawsPrice, setPawsPrice] = useState<number | null>(null)
     const AIRDROP_TARGET = 2_000_000
     const [selectedPresale, setSelectedPresale] = useState<string | null>(null)
     const [presaleTxHash, setPresaleTxHash] = useState('')
@@ -136,6 +138,12 @@ const HomeTab = () => {
         }
 
         initializeWalletState()
+    }, [])
+
+    useEffect(() => {
+        getPawsPrice().then(setPawsPrice)
+        const interval = setInterval(() => getPawsPrice().then(setPawsPrice), 60000)
+        return () => clearInterval(interval)
     }, [])
 
     useEffect(() => {
@@ -377,6 +385,11 @@ const HomeTab = () => {
                 <div className="flex items-center gap-1 text-center">
                     <div className="text-6xl font-bold mb-1">{displayBalance.toLocaleString()}</div>
                     <div className="text-white text-2xl">PAWS</div>
+                    {pawsPrice && (
+                        <div className="ml-2 text-xs text-[#22c55e] bg-[#22c55e]/10 px-2 py-0.5 rounded-full font-medium">
+                            {formatPawsPrice(pawsPrice)}
+                        </div>
+                    )}
                 </div>
                 <button
                     onClick={() => setShowRankModal(true)}
